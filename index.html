@@ -28,14 +28,17 @@
         .result-area { margin-top: 20px; padding: 15px; background: #1e272e; border: 2px solid #3498db; border-radius: 10px; display: none; text-align: center; }
         .result-area a { color: #3498db; font-weight: bold; text-decoration: none; font-size: 1.1em; display: block; margin-top: 10px; }
 
+        /* FOOTER PROMO ALAN */
         .promo-section { margin-top: 30px; padding: 20px; background: #252525; border-radius: 12px; border: 1px solid #444; text-align: center; }
         .promo-section h3 { margin: 10px 0; color: #fff; font-size: 1.1em; }
         .promo-section p { font-size: 0.85em; color: #aaa; margin-bottom: 15px; }
-        .btn-group { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-        .btn-promo { flex: 1; min-width: 130px; padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; text-decoration: none; font-size: 0.85em; text-align: center; transition: 0.3s; }
         
-        .btn-lynk { background: #00b894; color: white; }
+        .btn-group { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        .btn-promo { flex: 1; min-width: 130px; padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; text-decoration: none; font-size: 0.85em; text-align: center; display: block; }
+        
+        /* Tombol Baru Hype Store */
         .btn-hype { background: #6c5ce7; color: white; }
+        .btn-lynk { background: #00b894; color: white; }
         .btn-coffee { background: #f1c40f; color: #000; margin-top: 10px; width: 100%; }
         .btn-telegram { background: #0088cc; color: white; margin-top: 10px; width: 100%; }
         
@@ -52,9 +55,7 @@
             <label>Pilih File Video:</label>
             <input type="file" id="videoInput" accept="video/*">
         </div>
-
         <video id="preview" controls></video>
-
         <div class="input-item">
             <label>Pilih Model Potongan:</label>
             <select id="aspectRatio">
@@ -62,17 +63,14 @@
                 <option value="shorts">YouTube Shorts (9:16 Vertikal)</option>
             </select>
         </div>
-
         <div class="input-item">
             <label>Mulai Detik ke:</label>
-            <input type="number" id="startTime" value="0" min="0">
+            <input type="number" id="startTime" value="0">
         </div>
-
         <div class="input-item">
             <label>Durasi (Detik):</label>
-            <input type="number" id="duration" value="15" max="60">
+            <input type="number" id="duration" value="15">
         </div>
-        
         <button id="trimBtn">Gunting Video Sekarang</button>
     </div>
     
@@ -83,21 +81,18 @@
     <div id="status">Siap memproses video.</div>
 
     <div id="resultArea" class="result-area">
-        <p style="color: #3498db; font-weight: bold; margin: 0;">✅ PROSES SELESAI!</p>
-        <a id="downloadLink" href="#" target="_blank">⬇️ Download Video Hasil</a>
+        <p style="color: #3498db; font-weight: bold; margin: 0;">✅ SELESAI!</p>
+        <a id="downloadLink" href="#" target="_blank">⬇️ Download Video</a>
     </div>
 
     <div class="promo-section">
         <h3>Support Alan Studio</h3>
-        <p>Lihat koleksi produk terbaru atau dukung lewat donasi kopi.</p>
+        <p>Lihat katalog produk terbaru atau dukung lewat donasi kopi.</p>
         
         <div class="btn-group">
             <a href="https://lynk.id/anonymous11" target="_blank" class="btn-promo btn-lynk">🛒 Produk Digital</a>
-            
             <a href="https://hypestoreaffiliate.vercel.app/" target="_blank" class="btn-promo btn-hype">🔥 Hype Store</a>
-            
             <a href="https://saweria.co/Alansupiandi" target="_blank" class="btn-promo btn-coffee">☕ Traktir Alan Kopi</a>
-            
             <a href="https://t.me/+oWUzJccbisEwMTdl" target="_blank" class="btn-promo btn-telegram">📱 Gabung Grup Telegram</a>
         </div>
         
