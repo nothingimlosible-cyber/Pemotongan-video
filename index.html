@@ -5,55 +5,57 @@
     
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shorts Maker Pro</title>
+    <title>Shorts Video Maker</title>
     
-    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #1a1a1a; color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .container { max-width: 450px; width: 100%; background: #2d2d2d; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        h2 { color: #ff4757; text-align: center; margin-bottom: 20px; }
-        video { width: 100%; border-radius: 12px; background: #000; margin-bottom: 15px; }
-        .input-group { margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px; }
-        input, button { padding: 12px; border-radius: 8px; border: none; outline: none; }
-        input { background: #3d3d3d; color: white; border: 1px solid #555; }
-        button { background-color: #ff4757; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
-        button:hover { background-color: #ff6b81; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121212; color: #ffffff; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { max-width: 480px; width: 100%; background: #1e1e1e; padding: 25px; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); border: 1px solid #333; }
+        h2 { color: #ff0000; text-align: center; margin-bottom: 25px; }
+        video { width: 100%; border-radius: 10px; background: #000; margin-bottom: 20px; border: 1px solid #444; }
+        .control-panel { display: flex; flex-direction: column; gap: 15px; }
+        .input-item { display: flex; flex-direction: column; gap: 8px; }
+        input { padding: 12px; border-radius: 8px; border: 1px solid #444; background: #2a2a2a; color: #fff; }
+        button { padding: 15px; background-color: #ff0000; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background-color: #cc0000; }
         button:disabled { background-color: #555; cursor: not-allowed; }
-        #status { margin-top: 15px; font-size: 0.85em; color: #ffa502; text-align: center; min-height: 20px; }
-        .download-box { margin-top: 20px; padding: 15px; background: #2f3542; border: 1px dashed #70a1ff; border-radius: 12px; text-align: center; display: none; }
-        a { color: #70a1ff; text-decoration: none; font-weight: bold; }
+        #status { margin-top: 20px; text-align: center; font-size: 0.9em; color: #aaa; min-height: 24px; }
+        .result-area { margin-top: 20px; padding: 15px; background: #28a74522; border: 1px dashed #28a745; border-radius: 10px; display: none; text-align: center; }
+        .result-area a { color: #28a745; font-weight: bold; text-decoration: none; font-size: 1.1em; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Shorts Maker 🎬</h2>
+    <h2>YouTube Shorts Generator</h2>
     
-    <div class="input-group">
-        <label>Pilih Video Panjang:</label>
-        <input type="file" id="videoInput" accept="video/*">
-    </div>
+    <div class="control-panel">
+        <div class="input-item">
+            <label>Pilih File Video:</label>
+            <input type="file" id="videoInput" accept="video/*">
+        </div>
 
-    <video id="preview" controls></video>
+        <video id="preview" controls></video>
 
-    <div class="input-group">
-        <label>Mulai dari Detik:</label>
-        <input type="number" id="startTime" value="0" min="0">
-    </div>
+        <div class="input-item">
+            <label>Mulai Detik ke:</label>
+            <input type="number" id="startTime" value="0" min="0">
+        </div>
 
-    <div class="input-group">
-        <label>Durasi (Detik):</label>
-        <input type="number" id="duration" value="15" max="60">
+        <div class="input-item">
+            <label>Durasi (Maks 60 Detik):</label>
+            <input type="number" id="duration" value="15" max="60">
+        </div>
+        
+        <button id="trimBtn">Mulai Proses Shorts</button>
     </div>
     
-    <button id="trimBtn">Gunting Jadi Shorts</button>
-    
-    <div id="status">Siap digunakan.</div>
+    <div id="status">Siap memproses video.</div>
 
-    <div id="downloadBox" class="download-box">
-        <p>✅ Potongan Selesai!</p>
-        <a id="downloadBtn" href="#">⬇️ Download Video Shorts</a>
+    <div id="resultArea" class="result-area">
+        <p>✨ Berhasil Dipotong!</p>
+        <a id="downloadLink" href="#">⬇️ Download Hasil Video</a>
     </div>
 </div>
 
@@ -65,36 +67,42 @@
     const preview = document.getElementById('preview');
     const trimBtn = document.getElementById('trimBtn');
     const status = document.getElementById('status');
-    const downloadBox = document.getElementById('downloadBox');
-    const downloadBtn = document.getElementById('downloadBtn');
+    const resultArea = document.getElementById('resultArea');
+    const downloadLink = document.getElementById('downloadLink');
 
     videoInput.onchange = function() {
         const file = videoInput.files[0];
-        if (file) preview.src = URL.createObjectURL(file);
+        if (file) {
+            preview.src = URL.createObjectURL(file);
+            status.innerText = "Video terpilih: " + file.name;
+        }
     };
 
     trimBtn.onclick = async function() {
         const file = videoInput.files[0];
-        if (!file) return alert("Pilih video dulu bos!");
+        if (!file) return alert("Pilih file video terlebih dahulu!");
 
         trimBtn.disabled = true;
-        downloadBox.style.display = 'none';
-
+        resultArea.style.display = 'none';
+        
         try {
             if (!ffmpeg.isLoaded()) {
-                status.innerText = "Memuat mesin pemotong... (Hanya sekali)";
+                status.innerText = "Sedang memuat mesin pemotong... Mohon tunggu.";
                 await ffmpeg.load();
             }
 
             const start = document.getElementById('startTime').value;
             const dur = document.getElementById('duration').value;
 
-            status.innerText = "Sedang memotong & mengubah ke vertikal... Sabar ya.";
+            status.innerText = "Sedang memotong dan memproses format vertikal...";
 
-            // Tulis file ke memori FFmpeg
+            // Menulis file ke sistem virtual FFmpeg
             ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
 
-            // Perintah: Potong (-ss & -t) dan Crop Tengah jadi 9:16 (-vf)
+            // Perintah FFmpeg: 
+            // 1. Potong waktu (-ss dan -t)
+            // 2. Crop tengah untuk rasio 9:16 vertikal (-vf crop)
+            // 3. Preset ultrafast agar cepat di HP
             await ffmpeg.run(
                 '-i', 'input.mp4',
                 '-ss', `${start}`,
@@ -106,16 +114,19 @@
                 'output.mp4'
             );
 
+            // Mengambil hasil pemrosesan
             const data = ffmpeg.FS('readFile', 'output.mp4');
-            const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+            const videoBlob = new Blob([data.buffer], { type: 'video/mp4' });
+            const url = URL.createObjectURL(videoBlob);
             
-            downloadBtn.href = url;
-            downloadBtn.download = `shorts_${Date.now()}.mp4`;
-            downloadBox.style.display = 'block';
-            status.innerText = "Selesai!";
-        } catch (error) {
-            console.error(error);
-            status.innerText = "Waduh, gagal! Coba video yang lebih pendek atau refresh halaman.";
+            downloadLink.href = url;
+            downloadLink.download = `shorts_${Date.now()}.mp4`;
+            resultArea.style.display = 'block';
+            status.innerText = "Proses selesai!";
+            
+        } catch (err) {
+            console.error(err);
+            status.innerText = "Terjadi kesalahan. Pastikan file tidak terlalu besar.";
         } finally {
             trimBtn.disabled = false;
         }
