@@ -28,7 +28,6 @@
         .result-area { margin-top: 20px; padding: 15px; background: #1e272e; border: 2px solid #3498db; border-radius: 10px; display: none; text-align: center; }
         .result-area a { color: #3498db; font-weight: bold; text-decoration: none; font-size: 1.1em; display: block; margin-top: 10px; }
 
-        /* FOOTER PROMO ALAN */
         .promo-section { margin-top: 30px; padding: 20px; background: #252525; border-radius: 12px; border: 1px solid #444; text-align: center; }
         .promo-section h3 { margin: 10px 0; color: #fff; font-size: 1.1em; }
         .promo-section p { font-size: 0.85em; color: #aaa; margin-bottom: 15px; }
@@ -36,7 +35,6 @@
         .btn-group { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
         .btn-promo { flex: 1; min-width: 130px; padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; text-decoration: none; font-size: 0.85em; text-align: center; display: block; }
         
-        /* Tombol Baru Hype Store */
         .btn-hype { background: #6c5ce7; color: white; }
         .btn-lynk { background: #00b894; color: white; }
         .btn-coffee { background: #f1c40f; color: #000; margin-top: 10px; width: 100%; }
@@ -57,13 +55,6 @@
         </div>
         <video id="preview" controls></video>
         <div class="input-item">
-            <label>Pilih Model Potongan:</label>
-            <select id="aspectRatio">
-                <option value="original">Rasio Asli (Apa Adanya)</option>
-                <option value="shorts">YouTube Shorts (9:16 Vertikal)</option>
-            </select>
-        </div>
-        <div class="input-item">
             <label>Mulai Detik ke:</label>
             <input type="number" id="startTime" value="0">
         </div>
@@ -78,7 +69,7 @@
         <div id="progressBar"></div>
     </div>
     
-    <div id="status">Siap memproses video.</div>
+    <div id="status">Siap memproses video (Mode Cepat).</div>
 
     <div id="resultArea" class="result-area">
         <p style="color: #3498db; font-weight: bold; margin: 0;">✅ SELESAI!</p>
@@ -87,15 +78,12 @@
 
     <div class="promo-section">
         <h3>Support Alan Studio</h3>
-        <p>Lihat katalog produk terbaru atau dukung lewat donasi kopi.</p>
-        
         <div class="btn-group">
             <a href="https://lynk.id/anonymous11" target="_blank" class="btn-promo btn-lynk">🛒 Produk Digital</a>
             <a href="https://hypestoreaffiliate.vercel.app/" target="_blank" class="btn-promo btn-hype">🔥 Hype Store</a>
             <a href="https://saweria.co/Alansupiandi" target="_blank" class="btn-promo btn-coffee">☕ Traktir Alan Kopi</a>
             <a href="https://t.me/+oWUzJccbisEwMTdl" target="_blank" class="btn-promo btn-telegram">📱 Gabung Grup Telegram</a>
         </div>
-        
         <div class="watermark-text">"Kamu boleh pake sepuasnya ya"</div>
         <p style="margin-top: 15px; font-size: 0.7em; color: #555;">Copyright © 2026 | Alan Studio</p>
     </div>
@@ -111,7 +99,6 @@
     const status = document.getElementById('status');
     const resultArea = document.getElementById('resultArea');
     const downloadLink = document.getElementById('downloadLink');
-    const aspectRatio = document.getElementById('aspectRatio');
     const progressWrapper = document.getElementById('progressWrapper');
     const progressBar = document.getElementById('progressBar');
 
@@ -119,7 +106,7 @@
         const percentage = Math.floor(ratio * 100);
         if (percentage >= 0 && percentage <= 100) {
             progressBar.style.width = percentage + '%';
-            status.innerText = `Sedang memproses... ${percentage}%`;
+            status.innerText = `Memotong... ${percentage}%`;
         }
     });
 
@@ -130,7 +117,7 @@
 
     trimBtn.onclick = async function() {
         const file = videoInput.files[0];
-        if (!file) return alert("Pilih filenya dulu Lan!");
+        if (!file) return alert("Pilih filenya dulu!");
 
         trimBtn.disabled = true;
         resultArea.style.display = 'none';
@@ -139,28 +126,18 @@
         
         try {
             if (!ffmpeg.isLoaded()) {
-                status.innerText = "Memuat mesin... Sabar ya.";
+                status.innerText = "Loading mesin (Hanya sekali)...";
                 await ffmpeg.load();
             }
 
             const start = document.getElementById('startTime').value;
             const dur = document.getElementById('duration').value;
-            const mode = aspectRatio.value;
 
-            status.innerText = "Membaca file...";
+            status.innerText = "Mengambil data video...";
             ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
 
-            let ffmpegArgs = ['-i', 'input.mp4', '-ss', `${start}`, '-t', `${dur}`];
-
-            if (mode === 'shorts') {
-                ffmpegArgs.push('-vf', "crop=ih*9/16:ih,scale=720:-1");
-            } else {
-                ffmpegArgs.push('-vf', "scale='min(1280,iw)':-2");
-            }
-
-            ffmpegArgs.push('-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '28', '-c:a', 'copy', 'output.mp4');
-
-            await ffmpeg.run(...ffmpegArgs);
+            // MODE FAST BYPASS: Cuma menggunting, tanpa render ulang (RAM AMAN)
+            await ffmpeg.run('-i', 'input.mp4', '-ss', `${start}`, '-t', `${dur}`, '-c', 'copy', 'output.mp4');
 
             const data = ffmpeg.FS('readFile', 'output.mp4');
             const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
@@ -168,14 +145,14 @@
             downloadLink.href = url;
             downloadLink.download = `alan_edit_${Date.now()}.mp4`;
             resultArea.style.display = 'block';
-            status.innerText = "Selesai! Klik tombol download.";
+            status.innerText = "Selesai! Kilat kan?";
             
             ffmpeg.FS('unlink', 'input.mp4');
             ffmpeg.FS('unlink', 'output.mp4');
             
         } catch (err) {
             console.error(err);
-            status.innerText = "Error: RAM HP Penuh.";
+            status.innerText = "Gagal. Gunakan video yang lebih pendek atau restart browser.";
             progressWrapper.style.display = 'none';
         } finally {
             trimBtn.disabled = false;
