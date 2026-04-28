@@ -18,7 +18,12 @@
         button { padding: 15px; background-color: #ff0000; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
         button:hover { background-color: #cc0000; }
         button:disabled { background-color: #555; cursor: not-allowed; }
-        #status { margin-top: 20px; text-align: center; font-size: 0.9em; color: #ffa502; min-height: 24px; }
+        
+        /* Gaya Loading Bar */
+        #progressContainer { width: 100%; background-color: #333; border-radius: 10px; margin-top: 20px; display: none; overflow: hidden; }
+        #progressBar { width: 0%; height: 10px; background-color: #ff4757; transition: width 0.3s ease; }
+        
+        #status { margin-top: 10px; text-align: center; font-size: 0.9em; color: #ffa502; min-height: 24px; }
         .result-area { margin-top: 20px; padding: 15px; background: #28a74522; border: 1px dashed #28a745; border-radius: 10px; display: none; text-align: center; }
         .result-area a { color: #28a745; font-weight: bold; text-decoration: none; font-size: 1.1em; display: block; margin-top: 10px; }
     </style>
@@ -57,6 +62,10 @@
         <button id="trimBtn">Gunting Video Sekarang</button>
     </div>
     
+    <div id="progressContainer">
+        <div id="progressBar"></div>
+    </div>
+    
     <div id="status">Siap memproses video.</div>
 
     <div id="resultArea" class="result-area">
@@ -76,6 +85,15 @@
     const resultArea = document.getElementById('resultArea');
     const downloadLink = document.getElementById('downloadLink');
     const aspectRatio = document.getElementById('aspectRatio');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
+
+    // Menangkap progress dari FFmpeg
+    ffmpeg.setProgress(({ ratio }) => {
+        const percentage = Math.round(ratio * 100);
+        progressBar.style.width = percentage + '%';
+        status.innerText = `Sedang memproses... ${percentage}%`;
+    });
 
     videoInput.onchange = function() {
         const file = videoInput.files[0];
@@ -88,6 +106,8 @@
 
         trimBtn.disabled = true;
         resultArea.style.display = 'none';
+        progressContainer.style.display = 'block';
+        progressBar.style.width = '0%';
         
         try {
             if (!ffmpeg.isLoaded()) {
@@ -99,18 +119,13 @@
             const dur = document.getElementById('duration').value;
             const mode = aspectRatio.value;
 
-            status.innerText = "Sedang memproses video... Jangan tutup halaman.";
-
             ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
 
-            // Logika Perintah FFmpeg
             let ffmpegArgs = ['-i', 'input.mp4', '-ss', `${start}`, '-t', `${dur}`];
 
             if (mode === 'shorts') {
-                // Paksa jadi vertikal
                 ffmpegArgs.push('-vf', "crop=ih*9/16:ih,scale=720:-1");
             } else {
-                // Rasio asli tapi kecilkan resolusi dikit biar RAM kuat
                 ffmpegArgs.push('-vf', "scale='min(1280,iw)':-2");
             }
 
@@ -126,10 +141,12 @@
             downloadLink.download = `alan_video_${Date.now()}.mp4`;
             resultArea.style.display = 'block';
             status.innerText = "Mantap! Selesai.";
+            progressContainer.style.display = 'none';
             
         } catch (err) {
             console.error(err);
             status.innerText = "Gagal. Coba video yang durasinya lebih pendek.";
+            progressContainer.style.display = 'none';
         } finally {
             trimBtn.disabled = false;
         }
