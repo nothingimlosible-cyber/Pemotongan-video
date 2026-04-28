@@ -1,45 +1,59 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <script src="coi-serviceworker.js"></script>
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video to Shorts Trimmer - Alan</title>
+    <title>Shorts Maker Pro</title>
+    
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .container { max-width: 500px; width: 100%; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h2 { color: #ff0000; text-align: center; }
-        video { width: 100%; margin: 15px 0; border-radius: 10px; background: #000; }
-        .controls { display: flex; flex-direction: column; gap: 12px; }
-        input, button { padding: 12px; border-radius: 8px; border: 1px solid #ddd; }
-        button { background-color: #ff0000; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { background-color: #cc0000; }
-        button:disabled { background-color: #ccc; }
-        #status { margin-top: 15px; font-size: 0.9em; color: #555; text-align: center; }
-        .download-box { margin-top: 20px; padding: 15px; background: #e7f3ff; border-radius: 8px; text-align: center; display: none; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #1a1a1a; color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { max-width: 450px; width: 100%; background: #2d2d2d; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h2 { color: #ff4757; text-align: center; margin-bottom: 20px; }
+        video { width: 100%; border-radius: 12px; background: #000; margin-bottom: 15px; }
+        .input-group { margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px; }
+        input, button { padding: 12px; border-radius: 8px; border: none; outline: none; }
+        input { background: #3d3d3d; color: white; border: 1px solid #555; }
+        button { background-color: #ff4757; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        button:hover { background-color: #ff6b81; }
+        button:disabled { background-color: #555; cursor: not-allowed; }
+        #status { margin-top: 15px; font-size: 0.85em; color: #ffa502; text-align: center; min-height: 20px; }
+        .download-box { margin-top: 20px; padding: 15px; background: #2f3542; border: 1px dashed #70a1ff; border-radius: 12px; text-align: center; display: none; }
+        a { color: #70a1ff; text-decoration: none; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>Shorts Maker 🎬</h2>
-    <input type="file" id="videoInput" accept="video/*">
+    
+    <div class="input-group">
+        <label>Pilih Video Panjang:</label>
+        <input type="file" id="videoInput" accept="video/*">
+    </div>
+
     <video id="preview" controls></video>
 
-    <div class="controls">
-        <label>Mulai Detik ke:</label>
+    <div class="input-group">
+        <label>Mulai dari Detik:</label>
         <input type="number" id="startTime" value="0" min="0">
-        
-        <label>Durasi (Maks 60s):</label>
+    </div>
+
+    <div class="input-group">
+        <label>Durasi (Detik):</label>
         <input type="number" id="duration" value="15" max="60">
-        
-        <button id="trimBtn">Mulai Potong Video</button>
     </div>
     
-    <div id="status">Siap memproses...</div>
+    <button id="trimBtn">Gunting Jadi Shorts</button>
+    
+    <div id="status">Siap digunakan.</div>
+
     <div id="downloadBox" class="download-box">
-        <p>Potongan selesai!</p>
-        <a id="downloadBtn" href="#" download="shorts_alan.mp4" style="color: #007bff; font-weight: bold; text-decoration: none;">⬇️ Download Video Shorts</a>
+        <p>✅ Potongan Selesai!</p>
+        <a id="downloadBtn" href="#">⬇️ Download Video Shorts</a>
     </div>
 </div>
 
@@ -56,54 +70,57 @@
 
     videoInput.onchange = function() {
         const file = videoInput.files[0];
-        preview.src = URL.createObjectURL(file);
+        if (file) preview.src = URL.createObjectURL(file);
     };
 
     trimBtn.onclick = async function() {
         const file = videoInput.files[0];
-        if (!file) return alert("Pilih videonya dulu, Lan!");
+        if (!file) return alert("Pilih video dulu bos!");
 
         trimBtn.disabled = true;
-        status.innerText = "Memuat mesin FFmpeg... (Sabar ya)";
+        downloadBox.style.display = 'none';
 
-        // Load FFmpeg
-        if (!ffmpeg.isLoaded()) {
-            await ffmpeg.load();
+        try {
+            if (!ffmpeg.isLoaded()) {
+                status.innerText = "Memuat mesin pemotong... (Hanya sekali)";
+                await ffmpeg.load();
+            }
+
+            const start = document.getElementById('startTime').value;
+            const dur = document.getElementById('duration').value;
+
+            status.innerText = "Sedang memotong & mengubah ke vertikal... Sabar ya.";
+
+            // Tulis file ke memori FFmpeg
+            ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
+
+            // Perintah: Potong (-ss & -t) dan Crop Tengah jadi 9:16 (-vf)
+            await ffmpeg.run(
+                '-i', 'input.mp4',
+                '-ss', `${start}`,
+                '-t', `${dur}`,
+                '-vf', "crop=ih*9/16:ih", 
+                '-c:v', 'libx264',
+                '-preset', 'ultrafast',
+                '-c:a', 'copy',
+                'output.mp4'
+            );
+
+            const data = ffmpeg.FS('readFile', 'output.mp4');
+            const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+            
+            downloadBtn.href = url;
+            downloadBtn.download = `shorts_${Date.now()}.mp4`;
+            downloadBox.style.display = 'block';
+            status.innerText = "Selesai!";
+        } catch (error) {
+            console.error(error);
+            status.innerText = "Waduh, gagal! Coba video yang lebih pendek atau refresh halaman.";
+        } finally {
+            trimBtn.disabled = false;
         }
-
-        const start = document.getElementById('startTime').value;
-        const dur = document.getElementById('duration').value;
-
-        status.innerText = "Sedang memotong... Jangan tutup halaman ini.";
-
-        // Masukkan file ke memori virtual FFmpeg
-        ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
-
-        // Jalankan perintah potong & crop otomatis ke 9:16 (Vertikal)
-        // -ss: Start time, -t: Duration, -vf: Filter Video (Crop tengah)
-        await ffmpeg.run(
-            '-i', 'input.mp4',
-            '-ss', `${start}`,
-            '-t', `${dur}`,
-            '-vf', "crop=ih*9/16:ih", 
-            '-c:v', 'libx264',
-            '-preset', 'ultrafast',
-            '-c:a', 'copy',
-            'output.mp4'
-        );
-
-        // Baca hasil output
-        const data = ffmpeg.FS('readFile', 'output.mp4');
-
-        // Buat link download
-        const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
-        downloadBtn.href = url;
-        downloadBox.style.display = 'block';
-        status.innerText = "Selesai!";
-        trimBtn.disabled = false;
     };
 </script>
 
 </body>
 </html>
-
