@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video to Shorts Trimmer - Alan</title>
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { max-width: 500px; width: 100%; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #ff0000; text-align: center; }
+        video { width: 100%; margin: 15px 0; border-radius: 10px; background: #000; }
+        .controls { display: flex; flex-direction: column; gap: 12px; }
+        input, button { padding: 12px; border-radius: 8px; border: 1px solid #ddd; }
+        button { background-color: #ff0000; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background-color: #cc0000; }
+        button:disabled { background-color: #ccc; }
+        #status { margin-top: 15px; font-size: 0.9em; color: #555; text-align: center; }
+        .download-box { margin-top: 20px; padding: 15px; background: #e7f3ff; border-radius: 8px; text-align: center; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Shorts Maker 🎬</h2>
+    <input type="file" id="videoInput" accept="video/*">
+    <video id="preview" controls></video>
+
+    <div class="controls">
+        <label>Mulai Detik ke:</label>
+        <input type="number" id="startTime" value="0" min="0">
+        
+        <label>Durasi (Maks 60s):</label>
+        <input type="number" id="duration" value="15" max="60">
+        
+        <button id="trimBtn">Mulai Potong Video</button>
+    </div>
+    
+    <div id="status">Siap memproses...</div>
+    <div id="downloadBox" class="download-box">
+        <p>Potongan selesai!</p>
+        <a id="downloadBtn" href="#" download="shorts_alan.mp4" style="color: #007bff; font-weight: bold; text-decoration: none;">⬇️ Download Video Shorts</a>
+    </div>
+</div>
+
+<script>
+    const { createFFmpeg, fetchFile } = FFmpeg;
+    const ffmpeg = createFFmpeg({ log: true });
+
+    const videoInput = document.getElementById('videoInput');
+    const preview = document.getElementById('preview');
+    const trimBtn = document.getElementById('trimBtn');
+    const status = document.getElementById('status');
+    const downloadBox = document.getElementById('downloadBox');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    videoInput.onchange = function() {
+        const file = videoInput.files[0];
+        preview.src = URL.createObjectURL(file);
+    };
+
+    trimBtn.onclick = async function() {
+        const file = videoInput.files[0];
+        if (!file) return alert("Pilih videonya dulu, Lan!");
+
+        trimBtn.disabled = true;
+        status.innerText = "Memuat mesin FFmpeg... (Sabar ya)";
+
+        // Load FFmpeg
+        if (!ffmpeg.isLoaded()) {
+            await ffmpeg.load();
+        }
+
+        const start = document.getElementById('startTime').value;
+        const dur = document.getElementById('duration').value;
+
+        status.innerText = "Sedang memotong... Jangan tutup halaman ini.";
+
+        // Masukkan file ke memori virtual FFmpeg
+        ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
+
+        // Jalankan perintah potong & crop otomatis ke 9:16 (Vertikal)
+        // -ss: Start time, -t: Duration, -vf: Filter Video (Crop tengah)
+        await ffmpeg.run(
+            '-i', 'input.mp4',
+            '-ss', `${start}`,
+            '-t', `${dur}`,
+            '-vf', "crop=ih*9/16:ih", 
+            '-c:v', 'libx264',
+            '-preset', 'ultrafast',
+            '-c:a', 'copy',
+            'output.mp4'
+        );
+
+        // Baca hasil output
+        const data = ffmpeg.FS('readFile', 'output.mp4');
+
+        // Buat link download
+        const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+        downloadBtn.href = url;
+        downloadBox.style.display = 'block';
+        status.innerText = "Selesai!";
+        trimBtn.disabled = false;
+    };
+</script>
+
+</body>
+</html>
+
