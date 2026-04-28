@@ -19,13 +19,13 @@
         button:hover { background-color: #cc0000; }
         button:disabled { background-color: #555; cursor: not-allowed; }
         
-        /* Gaya Loading Bar */
-        #progressContainer { width: 100%; background-color: #333; border-radius: 10px; margin-top: 20px; display: none; overflow: hidden; }
-        #progressBar { width: 0%; height: 10px; background-color: #ff4757; transition: width 0.3s ease; }
+        /* Area Loading Bar */
+        .progress-wrapper { width: 100%; background-color: #333; border-radius: 10px; margin-top: 25px; height: 12px; overflow: hidden; display: none; border: 1px solid #444; }
+        #progressBar { width: 0%; height: 100%; background-color: #ff0000; transition: width 0.3s ease, background-color 0.5s ease; }
         
-        #status { margin-top: 10px; text-align: center; font-size: 0.9em; color: #ffa502; min-height: 24px; }
-        .result-area { margin-top: 20px; padding: 15px; background: #28a74522; border: 1px dashed #28a745; border-radius: 10px; display: none; text-align: center; }
-        .result-area a { color: #28a745; font-weight: bold; text-decoration: none; font-size: 1.1em; display: block; margin-top: 10px; }
+        #status { margin-top: 10px; text-align: center; font-size: 0.9em; color: #ffa502; min-height: 24px; font-weight: 500; }
+        .result-area { margin-top: 20px; padding: 15px; background: #1e272e; border: 2px solid #3498db; border-radius: 10px; display: none; text-align: center; }
+        .result-area a { color: #3498db; font-weight: bold; text-decoration: none; font-size: 1.1em; display: block; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -62,15 +62,15 @@
         <button id="trimBtn">Gunting Video Sekarang</button>
     </div>
     
-    <div id="progressContainer">
+    <div class="progress-wrapper" id="progressWrapper">
         <div id="progressBar"></div>
     </div>
     
     <div id="status">Siap memproses video.</div>
 
     <div id="resultArea" class="result-area">
-        <p>✨ Video Berhasil Diproses!</p>
-        <a id="downloadLink" href="#" target="_blank">⬇️ Klik Sini Untuk Download</a>
+        <p style="color: #3498db; font-weight: bold;">✅ PROSES SELESAI!</p>
+        <a id="downloadLink" href="#" target="_blank">⬇️ Download Video Hasil</a>
     </div>
 </div>
 
@@ -85,14 +85,18 @@
     const resultArea = document.getElementById('resultArea');
     const downloadLink = document.getElementById('downloadLink');
     const aspectRatio = document.getElementById('aspectRatio');
-    const progressContainer = document.getElementById('progressContainer');
+    const progressWrapper = document.getElementById('progressWrapper');
     const progressBar = document.getElementById('progressBar');
 
-    // Menangkap progress dari FFmpeg
+    // MESIN PENGERAK LOADING BAR
     ffmpeg.setProgress(({ ratio }) => {
-        const percentage = Math.round(ratio * 100);
-        progressBar.style.width = percentage + '%';
-        status.innerText = `Sedang memproses... ${percentage}%`;
+        const percentage = Math.floor(ratio * 100);
+        if (percentage >= 0 && percentage <= 100) {
+            progressBar.style.width = percentage + '%';
+            // Saat jalan warnanya MERAH
+            progressBar.style.backgroundColor = "#ff0000"; 
+            status.innerText = `Sedang memproses... ${percentage}%`;
+        }
     });
 
     videoInput.onchange = function() {
@@ -106,8 +110,9 @@
 
         trimBtn.disabled = true;
         resultArea.style.display = 'none';
-        progressContainer.style.display = 'block';
+        progressWrapper.style.display = 'block'; // Munculkan bar
         progressBar.style.width = '0%';
+        progressBar.style.backgroundColor = "#ff0000";
         
         try {
             if (!ffmpeg.isLoaded()) {
@@ -119,6 +124,7 @@
             const dur = document.getElementById('duration').value;
             const mode = aspectRatio.value;
 
+            status.innerText = "Membaca file video...";
             ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
 
             let ffmpegArgs = ['-i', 'input.mp4', '-ss', `${start}`, '-t', `${dur}`];
@@ -134,19 +140,21 @@
             await ffmpeg.run(...ffmpegArgs);
 
             const data = ffmpeg.FS('readFile', 'output.mp4');
-            const videoBlob = new Blob([data.buffer], { type: 'video/mp4' });
-            const url = URL.createObjectURL(videoBlob);
+            const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+            
+            // SAAT BERES, JADI BIRU
+            progressBar.style.width = '100%';
+            progressBar.style.backgroundColor = "#3498db"; 
             
             downloadLink.href = url;
-            downloadLink.download = `alan_video_${Date.now()}.mp4`;
+            downloadLink.download = `alan_edit_${Date.now()}.mp4`;
             resultArea.style.display = 'block';
-            status.innerText = "Mantap! Selesai.";
-            progressContainer.style.display = 'none';
+            status.innerText = "Proses Selesai! Cek tombol biru.";
             
         } catch (err) {
             console.error(err);
-            status.innerText = "Gagal. Coba video yang durasinya lebih pendek.";
-            progressContainer.style.display = 'none';
+            status.innerText = "Gagal. RAM HP mungkin penuh atau durasi terlalu panjang.";
+            progressWrapper.style.display = 'none';
         } finally {
             trimBtn.disabled = false;
         }
