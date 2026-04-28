@@ -2,33 +2,31 @@
 <html lang="id">
 <head>
     <script src="coi-serviceworker.js"></script>
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shorts Video Maker</title>
-    
+    <title>Video Trimmer Pro - Alan</title>
     <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121212; color: #ffffff; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .container { max-width: 480px; width: 100%; background: #1e1e1e; padding: 25px; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); border: 1px solid #333; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #121212; color: #ffffff; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { max-width: 480px; width: 100%; background: #1e1e1e; padding: 25px; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); border: 1px solid #333; }
         h2 { color: #ff0000; text-align: center; margin-bottom: 25px; }
         video { width: 100%; border-radius: 10px; background: #000; margin-bottom: 20px; border: 1px solid #444; }
         .control-panel { display: flex; flex-direction: column; gap: 15px; }
         .input-item { display: flex; flex-direction: column; gap: 8px; }
-        input { padding: 12px; border-radius: 8px; border: 1px solid #444; background: #2a2a2a; color: #fff; }
-        button { padding: 15px; background-color: #ff0000; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        input, select { padding: 12px; border-radius: 8px; border: 1px solid #444; background: #2a2a2a; color: #fff; }
+        button { padding: 15px; background-color: #ff0000; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
         button:hover { background-color: #cc0000; }
         button:disabled { background-color: #555; cursor: not-allowed; }
-        #status { margin-top: 20px; text-align: center; font-size: 0.9em; color: #aaa; min-height: 24px; }
+        #status { margin-top: 20px; text-align: center; font-size: 0.9em; color: #ffa502; min-height: 24px; }
         .result-area { margin-top: 20px; padding: 15px; background: #28a74522; border: 1px dashed #28a745; border-radius: 10px; display: none; text-align: center; }
-        .result-area a { color: #28a745; font-weight: bold; text-decoration: none; font-size: 1.1em; }
+        .result-area a { color: #28a745; font-weight: bold; text-decoration: none; font-size: 1.1em; display: block; margin-top: 10px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>YouTube Shorts Generator</h2>
+    <h2>Video Trimmer Pro 🎬</h2>
     
     <div class="control-panel">
         <div class="input-item">
@@ -39,23 +37,31 @@
         <video id="preview" controls></video>
 
         <div class="input-item">
+            <label>Pilih Model Potongan:</label>
+            <select id="aspectRatio">
+                <option value="original">Rasio Asli (Apa Adanya)</option>
+                <option value="shorts">YouTube Shorts (9:16 Vertikal)</option>
+            </select>
+        </div>
+
+        <div class="input-item">
             <label>Mulai Detik ke:</label>
             <input type="number" id="startTime" value="0" min="0">
         </div>
 
         <div class="input-item">
-            <label>Durasi (Maks 60 Detik):</label>
+            <label>Durasi (Detik):</label>
             <input type="number" id="duration" value="15" max="60">
         </div>
         
-        <button id="trimBtn">Mulai Proses Shorts</button>
+        <button id="trimBtn">Gunting Video Sekarang</button>
     </div>
     
     <div id="status">Siap memproses video.</div>
 
     <div id="resultArea" class="result-area">
-        <p>✨ Berhasil Dipotong!</p>
-        <a id="downloadLink" href="#">⬇️ Download Hasil Video</a>
+        <p>✨ Video Berhasil Diproses!</p>
+        <a id="downloadLink" href="#" target="_blank">⬇️ Klik Sini Untuk Download</a>
     </div>
 </div>
 
@@ -69,64 +75,61 @@
     const status = document.getElementById('status');
     const resultArea = document.getElementById('resultArea');
     const downloadLink = document.getElementById('downloadLink');
+    const aspectRatio = document.getElementById('aspectRatio');
 
     videoInput.onchange = function() {
         const file = videoInput.files[0];
-        if (file) {
-            preview.src = URL.createObjectURL(file);
-            status.innerText = "Video terpilih: " + file.name;
-        }
+        if (file) preview.src = URL.createObjectURL(file);
     };
 
     trimBtn.onclick = async function() {
         const file = videoInput.files[0];
-        if (!file) return alert("Pilih file video terlebih dahulu!");
+        if (!file) return alert("Pilih filenya dulu Lan!");
 
         trimBtn.disabled = true;
         resultArea.style.display = 'none';
         
         try {
             if (!ffmpeg.isLoaded()) {
-                status.innerText = "Sedang memuat mesin pemotong... Mohon tunggu.";
+                status.innerText = "Memuat mesin pemotong... Sabar ya.";
                 await ffmpeg.load();
             }
 
             const start = document.getElementById('startTime').value;
             const dur = document.getElementById('duration').value;
+            const mode = aspectRatio.value;
 
-            status.innerText = "Sedang memotong dan memproses format vertikal...";
+            status.innerText = "Sedang memproses video... Jangan tutup halaman.";
 
-            // Menulis file ke sistem virtual FFmpeg
             ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
 
-            // Perintah FFmpeg: 
-            // 1. Potong waktu (-ss dan -t)
-            // 2. Crop tengah untuk rasio 9:16 vertikal (-vf crop)
-            // 3. Preset ultrafast agar cepat di HP
-            await ffmpeg.run(
-                '-i', 'input.mp4',
-                '-ss', `${start}`,
-                '-t', `${dur}`,
-                '-vf', "crop=ih*9/16:ih", 
-                '-c:v', 'libx264',
-                '-preset', 'ultrafast',
-                '-c:a', 'copy',
-                'output.mp4'
-            );
+            // Logika Perintah FFmpeg
+            let ffmpegArgs = ['-i', 'input.mp4', '-ss', `${start}`, '-t', `${dur}`];
 
-            // Mengambil hasil pemrosesan
+            if (mode === 'shorts') {
+                // Paksa jadi vertikal
+                ffmpegArgs.push('-vf', "crop=ih*9/16:ih,scale=720:-1");
+            } else {
+                // Rasio asli tapi kecilkan resolusi dikit biar RAM kuat
+                ffmpegArgs.push('-vf', "scale='min(1280,iw)':-2");
+            }
+
+            ffmpegArgs.push('-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '28', '-c:a', 'copy', 'output.mp4');
+
+            await ffmpeg.run(...ffmpegArgs);
+
             const data = ffmpeg.FS('readFile', 'output.mp4');
             const videoBlob = new Blob([data.buffer], { type: 'video/mp4' });
             const url = URL.createObjectURL(videoBlob);
             
             downloadLink.href = url;
-            downloadLink.download = `shorts_${Date.now()}.mp4`;
+            downloadLink.download = `alan_video_${Date.now()}.mp4`;
             resultArea.style.display = 'block';
-            status.innerText = "Proses selesai!";
+            status.innerText = "Mantap! Selesai.";
             
         } catch (err) {
             console.error(err);
-            status.innerText = "Terjadi kesalahan. Pastikan file tidak terlalu besar.";
+            status.innerText = "Gagal. Coba video yang durasinya lebih pendek.";
         } finally {
             trimBtn.disabled = false;
         }
