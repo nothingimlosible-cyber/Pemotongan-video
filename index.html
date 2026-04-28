@@ -28,8 +28,14 @@
         .result-area { margin-top: 20px; padding: 15px; background: #1e272e; border: 2px solid #3498db; border-radius: 10px; display: none; text-align: center; }
         .result-area a { color: #3498db; font-weight: bold; text-decoration: none; font-size: 1.1em; display: block; margin-top: 10px; }
 
-        /* Footer & Promo Section Alan */
-        .promo-section { margin-top: 40px; padding: 20px; background: #252525; border-radius: 12px; border: 1px solid #444; text-align: center; }
+        /* Hype Store Section */
+        .hype-store { margin-top: 30px; padding: 18px; background: linear-gradient(135deg, #6c5ce7, #a29bfe); border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.2); }
+        .hype-store p { margin: 0; font-size: 0.75em; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #eee; }
+        .hype-store h3 { margin: 8px 0 12px 0; font-size: 1rem; color: #fff; line-height: 1.4; }
+        .btn-hype { display: block; width: 100%; background: #fff; color: #6c5ce7; padding: 12px; border-radius: 8px; border: none; font-weight: 800; cursor: pointer; text-decoration: none; font-size: 0.9em; box-sizing: border-box; }
+
+        /* Footer & Promo Section */
+        .promo-section { margin-top: 25px; padding: 20px; background: #252525; border-radius: 12px; border: 1px solid #444; text-align: center; }
         .promo-section h3 { margin: 10px 0; color: #fff; font-size: 1.1em; }
         .promo-section p { font-size: 0.85em; color: #aaa; margin-bottom: 15px; line-height: 1.4; }
         .btn-group { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
@@ -85,6 +91,14 @@
     <div id="resultArea" class="result-area">
         <p style="color: #3498db; font-weight: bold; margin: 0;">✅ PROSES SELESAI!</p>
         <a id="downloadLink" href="#" target="_blank">⬇️ Download Video Hasil</a>
+    </div>
+
+    <div class="hype-store">
+        <p>🔥 Upgrade Style Ngonten Kamu 🔥</p>
+        <h3>Lihat juga produk dari Shopee dan TikTok/Tokopedia di sini</h3>
+        <a href="https://hypestoreaffiliate.vercel.app/" target="_blank" class="btn-hype">
+            CEK KATALOG HYPE STORE 🚀
+        </a>
     </div>
 
     <div class="promo-section">
@@ -178,7 +192,6 @@
             resultArea.style.display = 'block';
             status.innerText = "Proses Selesai! Cek tombol biru.";
             
-            // Bersihkan memori RAM Virtual
             ffmpeg.FS('unlink', 'input.mp4');
             ffmpeg.FS('unlink', 'output.mp4');
             
