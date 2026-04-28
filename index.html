@@ -29,9 +29,6 @@
         .result-area a { color: #3498db; font-weight: bold; text-decoration: none; font-size: 1.1em; display: block; margin-top: 10px; }
 
         .promo-section { margin-top: 30px; padding: 20px; background: #252525; border-radius: 12px; border: 1px solid #444; text-align: center; }
-        .promo-section h3 { margin: 10px 0; color: #fff; font-size: 1.1em; }
-        .promo-section p { font-size: 0.85em; color: #aaa; margin-bottom: 15px; }
-        
         .btn-group { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
         .btn-promo { flex: 1; min-width: 130px; padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; text-decoration: none; font-size: 0.85em; text-align: center; display: block; }
         
@@ -55,6 +52,13 @@
         </div>
         <video id="preview" controls></video>
         <div class="input-item">
+            <label>Model Potongan:</label>
+            <select id="aspectRatio">
+                <option value="original">Original (Tanpa Render - Super Ringan)</option>
+                <option value="shorts">YouTube Shorts (9:16 Vertikal)</option>
+            </select>
+        </div>
+        <div class="input-item">
             <label>Mulai Detik ke:</label>
             <input type="number" id="startTime" value="0">
         </div>
@@ -69,7 +73,7 @@
         <div id="progressBar"></div>
     </div>
     
-    <div id="status">Siap memproses video (Mode Cepat).</div>
+    <div id="status">Siap memproses video.</div>
 
     <div id="resultArea" class="result-area">
         <p style="color: #3498db; font-weight: bold; margin: 0;">✅ SELESAI!</p>
@@ -99,6 +103,7 @@
     const status = document.getElementById('status');
     const resultArea = document.getElementById('resultArea');
     const downloadLink = document.getElementById('downloadLink');
+    const aspectRatio = document.getElementById('aspectRatio');
     const progressWrapper = document.getElementById('progressWrapper');
     const progressBar = document.getElementById('progressBar');
 
@@ -106,7 +111,7 @@
         const percentage = Math.floor(ratio * 100);
         if (percentage >= 0 && percentage <= 100) {
             progressBar.style.width = percentage + '%';
-            status.innerText = `Memotong... ${percentage}%`;
+            status.innerText = `Memproses... ${percentage}%`;
         }
     });
 
@@ -126,18 +131,24 @@
         
         try {
             if (!ffmpeg.isLoaded()) {
-                status.innerText = "Loading mesin (Hanya sekali)...";
+                status.innerText = "Memuat mesin...";
                 await ffmpeg.load();
             }
 
             const start = document.getElementById('startTime').value;
             const dur = document.getElementById('duration').value;
+            const mode = aspectRatio.value;
 
-            status.innerText = "Mengambil data video...";
+            status.innerText = "Membaca video...";
             ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
 
-            // MODE FAST BYPASS: Cuma menggunting, tanpa render ulang (RAM AMAN)
-            await ffmpeg.run('-i', 'input.mp4', '-ss', `${start}`, '-t', `${dur}`, '-c', 'copy', 'output.mp4');
+            if (mode === 'original') {
+                // MODE 1: COPY (Tanpa Render - Kilat & RAM Aman)
+                await ffmpeg.run('-i', 'input.mp4', '-ss', `${start}`, '-t', `${dur}`, '-c', 'copy', 'output.mp4');
+            } else {
+                // MODE 2: RENDER SHORTS (Perlu RAM lebih)
+                await ffmpeg.run('-i', 'input.mp4', '-ss', `${start}`, '-t', `${dur}`, '-vf', 'crop=ih*9/16:ih,scale=480:-2', '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '30', '-c:a', 'copy', 'output.mp4');
+            }
 
             const data = ffmpeg.FS('readFile', 'output.mp4');
             const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
@@ -145,14 +156,14 @@
             downloadLink.href = url;
             downloadLink.download = `alan_edit_${Date.now()}.mp4`;
             resultArea.style.display = 'block';
-            status.innerText = "Selesai! Kilat kan?";
+            status.innerText = "Selesai! Klik download.";
             
             ffmpeg.FS('unlink', 'input.mp4');
             ffmpeg.FS('unlink', 'output.mp4');
             
         } catch (err) {
             console.error(err);
-            status.innerText = "Gagal. Gunakan video yang lebih pendek atau restart browser.";
+            status.innerText = "Gagal. Video terlalu besar atau RAM penuh.";
             progressWrapper.style.display = 'none';
         } finally {
             trimBtn.disabled = false;
