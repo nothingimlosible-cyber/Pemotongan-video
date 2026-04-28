@@ -14,6 +14,7 @@
         video { width: 100%; border-radius: 10px; background: #000; margin-bottom: 20px; border: 1px solid #444; }
         .control-panel { display: flex; flex-direction: column; gap: 15px; }
         .input-item { display: flex; flex-direction: column; gap: 8px; }
+        label { font-size: 0.85em; color: #aaa; }
         input, select { padding: 12px; border-radius: 8px; border: 1px solid #444; background: #2a2a2a; color: #fff; font-size: 14px; }
         button { padding: 15px; background-color: #ff0000; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
         button:hover { background-color: #cc0000; }
@@ -33,11 +34,8 @@
         .btn-group { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
         .btn-promo { flex: 1; min-width: 130px; padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; text-decoration: none; font-size: 0.85em; text-align: center; transition: 0.3s; }
         
-        /* Tombol Khusus Hype Store (Gantiin WA) */
-        .btn-hype { background: #6c5ce7; color: white; }
-        .btn-hype:hover { background: #5649c1; }
-
         .btn-lynk { background: #00b894; color: white; }
+        .btn-hype { background: #6c5ce7; color: white; }
         .btn-coffee { background: #f1c40f; color: #000; margin-top: 10px; width: 100%; }
         .btn-telegram { background: #0088cc; color: white; margin-top: 10px; width: 100%; }
         
@@ -54,7 +52,9 @@
             <label>Pilih File Video:</label>
             <input type="file" id="videoInput" accept="video/*">
         </div>
+
         <video id="preview" controls></video>
+
         <div class="input-item">
             <label>Pilih Model Potongan:</label>
             <select id="aspectRatio">
@@ -62,14 +62,17 @@
                 <option value="shorts">YouTube Shorts (9:16 Vertikal)</option>
             </select>
         </div>
+
         <div class="input-item">
             <label>Mulai Detik ke:</label>
-            <input type="number" id="startTime" value="0">
+            <input type="number" id="startTime" value="0" min="0">
         </div>
+
         <div class="input-item">
             <label>Durasi (Detik):</label>
-            <input type="number" id="duration" value="15">
+            <input type="number" id="duration" value="15" max="60">
         </div>
+        
         <button id="trimBtn">Gunting Video Sekarang</button>
     </div>
     
@@ -80,8 +83,8 @@
     <div id="status">Siap memproses video.</div>
 
     <div id="resultArea" class="result-area">
-        <p style="color: #3498db; font-weight: bold; margin: 0;">✅ SELESAI!</p>
-        <a id="downloadLink" href="#" target="_blank">⬇️ Download Video</a>
+        <p style="color: #3498db; font-weight: bold; margin: 0;">✅ PROSES SELESAI!</p>
+        <a id="downloadLink" href="#" target="_blank">⬇️ Download Video Hasil</a>
     </div>
 
     <div class="promo-section">
@@ -94,6 +97,7 @@
             <a href="https://hypestoreaffiliate.vercel.app/" target="_blank" class="btn-promo btn-hype">🔥 Hype Store</a>
             
             <a href="https://saweria.co/Alansupiandi" target="_blank" class="btn-promo btn-coffee">☕ Traktir Alan Kopi</a>
+            
             <a href="https://t.me/+oWUzJccbisEwMTdl" target="_blank" class="btn-promo btn-telegram">📱 Gabung Grup Telegram</a>
         </div>
         
@@ -103,7 +107,85 @@
 </div>
 
 <script>
-    // Logika FFmpeg tetap sama seperti sebelumnya
+    const { createFFmpeg, fetchFile } = FFmpeg;
+    const ffmpeg = createFFmpeg({ log: true });
+
+    const videoInput = document.getElementById('videoInput');
+    const preview = document.getElementById('preview');
+    const trimBtn = document.getElementById('trimBtn');
+    const status = document.getElementById('status');
+    const resultArea = document.getElementById('resultArea');
+    const downloadLink = document.getElementById('downloadLink');
+    const aspectRatio = document.getElementById('aspectRatio');
+    const progressWrapper = document.getElementById('progressWrapper');
+    const progressBar = document.getElementById('progressBar');
+
+    ffmpeg.setProgress(({ ratio }) => {
+        const percentage = Math.floor(ratio * 100);
+        if (percentage >= 0 && percentage <= 100) {
+            progressBar.style.width = percentage + '%';
+            status.innerText = `Sedang memproses... ${percentage}%`;
+        }
+    });
+
+    videoInput.onchange = function() {
+        const file = videoInput.files[0];
+        if (file) preview.src = URL.createObjectURL(file);
+    };
+
+    trimBtn.onclick = async function() {
+        const file = videoInput.files[0];
+        if (!file) return alert("Pilih filenya dulu Lan!");
+
+        trimBtn.disabled = true;
+        resultArea.style.display = 'none';
+        progressWrapper.style.display = 'block';
+        progressBar.style.width = '0%';
+        
+        try {
+            if (!ffmpeg.isLoaded()) {
+                status.innerText = "Memuat mesin... Sabar ya.";
+                await ffmpeg.load();
+            }
+
+            const start = document.getElementById('startTime').value;
+            const dur = document.getElementById('duration').value;
+            const mode = aspectRatio.value;
+
+            status.innerText = "Membaca file...";
+            ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
+
+            let ffmpegArgs = ['-i', 'input.mp4', '-ss', `${start}`, '-t', `${dur}`];
+
+            if (mode === 'shorts') {
+                ffmpegArgs.push('-vf', "crop=ih*9/16:ih,scale=720:-1");
+            } else {
+                ffmpegArgs.push('-vf', "scale='min(1280,iw)':-2");
+            }
+
+            ffmpegArgs.push('-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '28', '-c:a', 'copy', 'output.mp4');
+
+            await ffmpeg.run(...ffmpegArgs);
+
+            const data = ffmpeg.FS('readFile', 'output.mp4');
+            const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+            
+            downloadLink.href = url;
+            downloadLink.download = `alan_edit_${Date.now()}.mp4`;
+            resultArea.style.display = 'block';
+            status.innerText = "Selesai! Klik tombol download.";
+            
+            ffmpeg.FS('unlink', 'input.mp4');
+            ffmpeg.FS('unlink', 'output.mp4');
+            
+        } catch (err) {
+            console.error(err);
+            status.innerText = "Error: RAM HP Penuh.";
+            progressWrapper.style.display = 'none';
+        } finally {
+            trimBtn.disabled = false;
+        }
+    };
 </script>
 
 </body>
