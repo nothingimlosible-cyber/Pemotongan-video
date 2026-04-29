@@ -4,85 +4,115 @@
     <script src="coi-serviceworker.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alan Video Clipper HD - Zoom & Pan</title>
+    <title>Alan Studio - Pro Video Clipper</title>
     <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: #121212; color: white; display: flex; flex-direction: column; align-items: center; padding: 10px; }
-        .container { max-width: 450px; width: 100%; background: #1e1e1e; padding: 20px; border-radius: 15px; border: 1px solid #333; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: white; display: flex; flex-direction: column; align-items: center; padding: 10px; margin: 0; }
+        .container { max-width: 450px; width: 100%; background: #1a1a1a; padding: 20px; border-radius: 20px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h2 { text-align: center; color: #ff0000; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; }
         
-        /* Kunci Preview: Biar kelihatan pas di-zoom */
-        .video-wrapper { 
+        /* Preview Area */
+        .preview-window { 
             width: 100%; 
             aspect-ratio: 9/16; 
             background: #000; 
             overflow: hidden; 
             position: relative; 
-            border-radius: 10px; 
+            border-radius: 12px; 
             margin-bottom: 20px;
-            display: none; /* Muncul cuma pas mode Shorts */
+            border: 2px solid #444;
+        }
+        /* Latar Blur Visual (Hanya Preview) */
+        #blur-bg {
+            position: absolute; width: 100%; height: 100%;
+            object-fit: cover; filter: blur(15px) brightness(0.5);
+            transform: scale(1.2); opacity: 0;
         }
         #preview { 
             position: absolute; 
-            height: 100%; 
-            left: 50%; 
-            top: 50%; 
-            transform: translate(-50%, -50%); 
-            transition: 0.1s; /* Biar smooth pas digeser */
+            max-width: none;
+            left: 50%; top: 50%; 
+            transform: translate(-50%, -50%) scale(1);
+            transition: 0.1s; 
+            z-index: 2;
         }
 
-        .input-item { margin-bottom: 15px; display: flex; flex-direction: column; gap: 5px; }
-        label { font-size: 0.8em; color: #aaa; }
-        input[type="range"] { width: 100%; accent-color: #ff0000; }
-        button { width: 100%; padding: 15px; background: #ff0000; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        #status { font-size: 0.8em; color: #ffa502; text-align: center; margin-top: 10px; }
-        .progress-wrapper { width: 100%; height: 10px; background: #333; margin-top: 10px; border-radius: 5px; overflow: hidden; display: none; }
-        #progressBar { width: 0%; height: 100%; background: #ff0000; }
-        .result-area { margin-top: 20px; text-align: center; display: none; padding: 15px; border: 2px solid #3498db; border-radius: 10px; }
+        .controls { display: flex; flex-direction: column; gap: 15px; }
+        .input-group { display: flex; flex-direction: column; gap: 5px; }
+        label { font-size: 0.8em; color: #888; font-weight: bold; }
+        input[type="range"] { width: 100%; accent-color: #ff0000; cursor: pointer; }
+        select, input[type="number"], input[type="file"] { 
+            padding: 10px; border-radius: 8px; border: 1px solid #333; background: #252525; color: white; 
+        }
+        
+        button { 
+            width: 100%; padding: 15px; background: #ff0000; color: white; border: none; 
+            border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px;
+            transition: 0.3s;
+        }
+        button:hover { background: #cc0000; transform: translateY(-2px); }
+        button:disabled { background: #444; cursor: not-allowed; }
+
+        #status { font-size: 0.8em; color: #ffa502; text-align: center; margin-top: 15px; font-weight: 500; }
+        .progress-container { width: 100%; height: 8px; background: #333; margin-top: 10px; border-radius: 4px; overflow: hidden; display: none; }
+        #progressBar { width: 0%; height: 100%; background: #ff0000; transition: 0.3s; }
+        
+        .result-box { 
+            margin-top: 20px; text-align: center; display: none; padding: 20px; 
+            background: #002b36; border-radius: 12px; border: 1px dashed #2aa198;
+        }
+        .download-btn { color: #2aa198; text-decoration: none; font-weight: bold; font-size: 1.1em; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 style="text-align:center; color:#ff0000;">Alan Studio HD 🎬</h2>
+    <h2>STUDIO PRO 🎬</h2>
     
-    <input type="file" id="videoInput" accept="video/*" style="margin-bottom: 20px;">
-    
-    <div class="video-wrapper" id="wrapper">
+    <div class="input-group">
+        <label>PILIH VIDEO:</label>
+        <input type="file" id="videoInput" accept="video/*">
+    </div>
+
+    <div class="preview-window" id="pWindow">
+        <img id="blur-bg">
         <video id="preview" muted loop></video>
     </div>
 
-    <div class="input-item">
-        <label>Model Potongan:</label>
-        <select id="aspectRatio" onchange="updateView()">
-            <option value="original">Original (Tanpa Edit)</option>
-            <option value="shorts">YouTube Shorts (9:16 HD)</option>
-        </select>
-    </div>
-
-    <div id="controls" style="display:none;">
-        <div class="input-item">
-            <label>🔍 Zoom:</label>
-            <input type="range" id="zoomVal" min="1" max="3" step="0.1" value="1" oninput="updateView()">
+    <div class="controls">
+        <div class="input-group">
+            <label>LATAR BELAKANG:</label>
+            <select id="bgType" onchange="updateView()">
+                <option value="blur">Efek Blur (Estetik)</option>
+                <option value="black">Hitam Polos</option>
+            </select>
         </div>
-        <div class="input-item">
-            <label>↔️ Geser Kiri/Kanan:</label>
+
+        <div class="input-group">
+            <label>🔍 ZOOM (0.1x - 5.0x):</label>
+            <input type="range" id="zoomVal" min="0.1" max="5" step="0.1" value="1" oninput="updateView()">
+            <span id="zoomDisp" style="font-size: 10px; text-align: right;">1.0x</span>
+        </div>
+
+        <div class="input-group">
+            <label>↔️ GESER HORIZONTAL:</label>
             <input type="range" id="panVal" min="0" max="100" step="1" value="50" oninput="updateView()">
         </div>
-    </div>
 
-    <div class="input-item">
-        <label>Durasi (Detik):</label>
-        <input type="number" id="duration" value="15">
-    </div>
+        <div class="input-group">
+            <label>DURASI (DETIK):</label>
+            <input type="number" id="duration" value="15" min="1">
+        </div>
 
-    <button id="trimBtn">Gunting & Download HD</button>
+        <button id="trimBtn">GUNTING & DOWNLOAD HD</button>
+    </div>
     
-    <div id="status">Pilih video dulu Lan...</div>
-    <div class="progress-wrapper" id="progressWrapper"><div id="progressBar"></div></div>
+    <div id="status">Upload video dulu ya, guys...</div>
+    <div class="progress-container" id="pContainer"><div id="progressBar"></div></div>
 
-    <div id="resultArea" class="result-area">
-        <p>✅ BERES!</p>
-        <a id="downloadLink" href="#" style="color:#3498db; font-weight:bold;">⬇️ DOWNLOAD DISINI</a>
+    <div id="resultBox" class="result-box">
+        <p>✅ BERHASIL DI-RENDER!</p>
+        <a id="downloadLink" href="#" class="download-btn">⬇️ DOWNLOAD VIDEO SEKARANG</a>
     </div>
 </div>
 
@@ -92,31 +122,33 @@
 
     const videoInput = document.getElementById('videoInput');
     const preview = document.getElementById('preview');
-    const wrapper = document.getElementById('wrapper');
+    const blurBg = document.getElementById('blur-bg');
     const zoomSlider = document.getElementById('zoomVal');
     const panSlider = document.getElementById('panVal');
+    const zoomDisp = document.getElementById('zoomDisp');
 
-    // Fungsi biar preview ikut gerak pas slider digeser
     function updateView() {
-        const mode = document.getElementById('aspectRatio').value;
-        if (mode === 'shorts') {
-            wrapper.style.display = 'block';
-            document.getElementById('controls').style.display = 'block';
-            
-            const zoom = zoomSlider.value;
-            const pan = panSlider.value;
-            
-            // Simulasi visual di layar
-            preview.style.transform = `translate(-${pan}%, -50%) scale(${zoom})`;
+        const zoom = zoomSlider.value;
+        const pan = panSlider.value;
+        const bg = document.getElementById('bgType').value;
+        
+        zoomDisp.innerText = zoom + 'x';
+        
+        // Update Preview Visual
+        preview.style.transform = `translate(-${pan}%, -50%) scale(${zoom})`;
+        
+        if(bg === 'blur') {
+            blurBg.style.opacity = "1";
+            blurBg.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"; // placeholder
         } else {
-            wrapper.style.display = 'none';
-            document.getElementById('controls').style.display = 'none';
+            blurBg.style.opacity = "0";
         }
     }
 
     videoInput.onchange = ({ target }) => {
         const file = target.files[0];
-        preview.src = URL.createObjectURL(file);
+        const url = URL.createObjectURL(file);
+        preview.src = url;
         preview.play();
         updateView();
     };
@@ -125,40 +157,59 @@
         const file = videoInput.files[0];
         if (!file) return;
 
+        // Iklan Alan
         window.open('https://www.profitablecpmratenetwork.com/x9gjq9xm3?key=42622500e3fa317851d92d6c01535d48', '_blank');
 
-        document.getElementById('trimBtn').disabled = true;
-        document.getElementById('progressWrapper').style.display = 'block';
+        const btn = document.getElementById('trimBtn');
+        btn.disabled = true;
+        document.getElementById('pContainer').style.display = 'block';
         
         if (!ffmpeg.isLoaded()) await ffmpeg.load();
 
-        ffmpeg.FS('writeFile', 'in.mp4', await fetchFile(file));
+        ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
 
-        const mode = document.getElementById('aspectRatio').value;
         const dur = document.getElementById('duration').value;
+        const z = zoomSlider.value;
+        const p = panSlider.value;
+        const bg = document.getElementById('bgType').value;
 
-        if (mode === 'original') {
-            await ffmpeg.run('-i', 'in.mp4', '-t', dur, '-c', 'copy', 'out.mp4');
+        // LOGIKA FFmpeg SAKTI UNTUK BLUR & ZOOM
+        // Kita bikin canvas 720x1280 (9:16)
+        let filter = "";
+        if (bg === 'blur') {
+            // Filter: Ambil video, scale ke background, blur, lalu tiban video asli yang di-zoom
+            filter = `[0:v]scale=720:1280,boxblur=20:10[bg];[0:v]scale=iw*${z}:-1[fg];[bg][fg]overlay=(W-w)*${p}/100:(H-h)/2:format=rgb,crop=720:1280`;
         } else {
-            const z = zoomSlider.value;
-            const p = panSlider.value;
-            // Rumus sinkronisasi antara preview CSS dan FFmpeg
-            let crop = `crop=ih*9/16/${z}:ih/${z}:(iw-ih*9/16/${z})*${p}/100:0`;
-            
-            await ffmpeg.run('-i', 'in.mp4', '-t', dur, '-vf', `${crop},scale=720:-2`, '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '25', 'out.mp4');
+            // Latar hitam
+            filter = `scale=iw*${z}:-1,pad=720:1280:(720-iw)/2:(1280-ih)/2:black,crop=720:1280:(720-720)*${p}/100:0`;
         }
 
-        const data = ffmpeg.FS('readFile', 'out.mp4');
-        document.getElementById('downloadLink').href = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
-        document.getElementById('downloadLink').download = 'alan_studio.mp4';
-        document.getElementById('resultArea').style.display = 'block';
-        document.getElementById('trimBtn').disabled = false;
-        document.getElementById('status').innerText = "Selesai Lan!";
+        try {
+            await ffmpeg.run(
+                '-i', 'input.mp4', 
+                '-t', dur, 
+                '-lavfi', filter,
+                '-c:v', 'libx264', 
+                '-preset', 'ultrafast', 
+                '-crf', '28', 
+                'output.mp4'
+            );
+
+            const data = ffmpeg.FS('readFile', 'output.mp4');
+            document.getElementById('downloadLink').href = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+            document.getElementById('downloadLink').download = `alan_pro_${Date.now()}.mp4`;
+            document.getElementById('resultBox').style.display = 'block';
+            document.getElementById('status').innerText = "✅ JADI, LAN! CEK HASILNYA.";
+        } catch (e) {
+            document.getElementById('status').innerText = "❌ HP Gak kuat render blur, Lan!";
+        }
+        
+        btn.disabled = false;
     };
 
     ffmpeg.setProgress(({ ratio }) => {
         document.getElementById('progressBar').style.width = (ratio * 100) + '%';
-        document.getElementById('status').innerText = `Lagi Render: ${Math.floor(ratio * 100)}%`;
+        document.getElementById('status').innerText = `Lagi Masak Blur: ${Math.floor(ratio * 100)}%`;
     });
 </script>
 
