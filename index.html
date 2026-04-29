@@ -4,20 +4,19 @@
     <script src="coi-serviceworker.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ALAN CLIPPER PRO - Edit Video Tanpa Aplikasi</title>
+    <title>ALAN CLIPPER PRO - Edit Video HD Online</title>
     <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
     <style>
         :root { --red: #ff0000; --dark: #0a0a0a; --panel: #161616; --gray: #222; }
         body { font-family: 'Inter', sans-serif; background: var(--dark); color: white; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
-        
         .container { max-width: 450px; width: 100%; }
         
-        /* HEADER & AD SLOT */
+        /* IKLAN */
         .ad-top { width: 100%; min-height: 90px; margin-bottom: 15px; background: #000; display: flex; justify-content: center; overflow: hidden; border-radius: 8px; }
 
-        /* EDITOR BOX */
+        /* EDITOR */
         .editor-container { background: var(--panel); border-radius: 20px; padding: 15px; border: 1px solid #333; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
-        h2 { color: var(--red); text-align: center; margin: 0 0 15px 0; font-size: 1.2rem; letter-spacing: 1px; }
+        h2 { color: var(--red); text-align: center; margin: 0 0 15px 0; font-size: 1.2rem; letter-spacing: 1px; text-transform: uppercase; }
         
         .preview-box { 
             width: 100%; aspect-ratio: 9/16; background: #000; border-radius: 12px; 
@@ -34,17 +33,15 @@
         
         .action-btn { width: 100%; padding: 15px; background: var(--red); color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; margin-top: 10px; }
         .action-btn:active { transform: scale(0.95); }
+        .action-btn:disabled { background: #444; cursor: not-allowed; }
 
-        /* AUTO TEXT BUTTON (PREMIUM LOOK) */
         .ai-feature { background: linear-gradient(45deg, #1e1e1e, #331111); border: 1px solid #ff4444; padding: 10px; border-radius: 10px; margin-top: 15px; text-align: center; cursor: pointer; }
         .ai-feature span { font-size: 12px; font-weight: bold; color: #ff4444; }
 
-        /* STATUS & PROGRESS */
-        #status { font-size: 11px; color: #ffa502; text-align: center; margin-top: 10px; height: 15px; }
+        #status { font-size: 11px; color: #ffa502; text-align: center; margin-top: 10px; min-height: 15px; }
         .p-bar { width: 100%; height: 6px; background: #111; border-radius: 3px; margin-top: 5px; display: none; overflow: hidden; }
         #pFill { width: 0%; height: 100%; background: var(--red); transition: 0.3s; }
 
-        /* FOOTER / PROMO */
         .footer-promo { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
         .p-btn { padding: 10px; font-size: 10px; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold; background: #252525; color: #ccc; border: 1px solid #333; }
     </style>
@@ -67,34 +64,34 @@
             </div>
 
             <div class="control-group">
-                <label>1. LOAD VIDEO</label>
+                <label>1. PILIH FILE VIDEO</label>
                 <input type="file" id="videoLoad" accept="video/*">
             </div>
 
             <div class="control-group">
-                <label>2. ZOOM MANUAL (CIAT CIUT)</label>
-                <input type="range" id="zoomS" min="0.1" max="4" step="0.1" value="1">
+                <label>2. ZOOM MANUAL (BESARKAN/KECILKAN)</label>
+                <input type="range" id="zoomS" min="0.1" max="5" step="0.1" value="1">
             </div>
 
             <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                 <div class="control-group" style="flex: 1; margin-bottom: 0;">
-                    <label>DURASI (DETIK)</label>
-                    <input type="number" id="durT" value="15">
+                    <label>MULAI (DETIK)</label>
+                    <input type="number" id="startT" value="0">
                 </div>
                 <div class="control-group" style="flex: 1; margin-bottom: 0;">
-                    <label>MULAI DARI</label>
-                    <input type="number" id="startT" value="0">
+                    <label>DURASI</label>
+                    <input type="number" id="durT" value="15">
                 </div>
             </div>
 
             <button class="action-btn" id="renderBtn">GUNTING & RENDER HD</button>
             
-            <div id="status">Siap render video kamu, Lan!</div>
+            <div id="status">Pilih video dulu Lan...</div>
             <div class="p-bar" id="pBar"><div id="pFill"></div></div>
 
             <div class="ai-feature" onclick="window.open('https://t.me/+oWUzJccbisEwMTdl', '_blank')">
-                <span>✨ KLIK UNTUK FITUR TEKS OTOMATIS (AI) ✨</span>
-                <p style="font-size: 8px; color: #888; margin: 5px 0 0 0;">Tersedia eksklusif di Grup Telegram Alan Studio</p>
+                <span>✨ KLIK UNTUK FITUR TEKS OTOMATIS ✨</span>
+                <p style="font-size: 8px; color: #888; margin: 5px 0 0 0;">Dapatkan akses di Grup Telegram Alan Studio</p>
             </div>
         </div>
 
@@ -125,12 +122,12 @@
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         if (video.readyState >= 2) {
-            // Blur Background
-            ctx.filter = 'blur(30px) brightness(0.4)';
+            // Latar Belakang Blur
+            ctx.filter = 'blur(25px) brightness(0.4)';
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             ctx.filter = 'none';
 
-            // Main Video
+            // Video Utama (Bisa digeser)
             scale = zoomS.value;
             const vW = video.videoWidth * scale;
             const vH = video.videoHeight * scale;
@@ -140,7 +137,7 @@
     }
     draw();
 
-    // Drag Logic (Jari/Mouse)
+    // Logika Geser Pakai Jari/Mouse
     const editor = document.getElementById('editor');
     editor.addEventListener('pointerdown', (e) => { isDragging = true; lastX = e.clientX; lastY = e.clientY; });
     window.addEventListener('pointerup', () => isDragging = false);
@@ -152,8 +149,12 @@
     });
 
     document.getElementById('videoLoad').onchange = (e) => {
-        video.src = URL.createObjectURL(e.target.files[0]);
-        video.muted = true; video.loop = true; video.play();
+        const file = e.target.files[0];
+        if (file) {
+            video.src = URL.createObjectURL(file);
+            video.muted = true; video.loop = true; video.play();
+            document.getElementById('status').innerText = "Video masuk! Geser & Zoom sesukamu Lan.";
+        }
     };
 
     document.getElementById('renderBtn').onclick = async () => {
@@ -166,30 +167,54 @@
         btn.disabled = true;
         document.getElementById('pBar').style.display = 'block';
 
-        if (!ffmpeg.isLoaded()) await ffmpeg.load();
+        if (!ffmpeg.isLoaded()) {
+            document.getElementById('status').innerText = "Lagi manasin mesin render...";
+            await ffmpeg.load();
+        }
+        
         ffmpeg.FS('writeFile', 'in.mp4', await fetchFile(file));
 
+        // Kalkulasi posisi final untuk FFmpeg
         const fW = video.videoWidth * scale;
         const offX = posX - fW/2;
         const offY = posY - (video.videoHeight * scale)/2;
 
         const filter = `[0:v]scale=720:1280,boxblur=20:10[bg];[0:v]scale=${fW}:-1[fg];[bg][fg]overlay=${offX}:${offY},crop=720:1280`;
 
-        await ffmpeg.run('-i', 'in.mp4', '-ss', document.getElementById('startT').value, '-t', document.getElementById('durT').value, '-lavfi', filter, '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '25', 'out.mp4');
+        try {
+            await ffmpeg.run(
+                '-i', 'in.mp4',
+                '-ss', document.getElementById('startT').value,
+                '-t', document.getElementById('durT').value,
+                '-lavfi', filter,
+                '-c:v', 'libx264',
+                '-preset', 'ultrafast',
+                '-crf', '25',
+                '-c:a', 'aac',    // PERBAIKAN: Masak ulang suara biar muncul
+                '-b:a', '128k',   // Bitrate suara standar
+                '-map', '0:v:0',  // Ambil video
+                '-map', '0:a:0?', // Ambil audio (jika ada)
+                'out.mp4'
+            );
 
-        const data = ffmpeg.FS('readFile', 'out.mp4');
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
-        link.download = `alan_pro_${Date.now()}.mp4`;
-        link.click();
+            const data = ffmpeg.FS('readFile', 'out.mp4');
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+            link.download = `alan_studio_pro_${Date.now()}.mp4`;
+            link.click();
+            
+            document.getElementById('status').innerText = "✅ SELESAI! Video siap sedot.";
+        } catch (e) {
+            document.getElementById('status').innerText = "❌ Gagal Render. Mungkin HP gak kuat.";
+        }
         
         btn.disabled = false;
-        document.getElementById('status').innerText = "✅ BERES! CEK DOWNLOAD.";
+        document.getElementById('pBar').style.display = 'none';
     };
 
     ffmpeg.setProgress(({ ratio }) => {
         document.getElementById('pFill').style.width = (ratio * 100) + '%';
-        document.getElementById('status').innerText = `Lagi Render: ${Math.floor(ratio * 100)}%`;
+        document.getElementById('status').innerText = `Merender HD + Suara: ${Math.floor(ratio * 100)}%`;
     });
 </script>
 
