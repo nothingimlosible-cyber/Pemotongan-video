@@ -4,88 +4,74 @@
     <script src="coi-serviceworker.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ALAN CLIPPER PRO HD</title>
+    <title>ALAN CLIPPER FIX</title>
     <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: #0a0a0a; color: white; display: flex; flex-direction: column; align-items: center; padding: 10px; margin: 0; }
-        .container { max-width: 420px; width: 100%; background: #161616; padding: 20px; border-radius: 15px; border: 1px solid #333; box-sizing: border-box; }
-        h2 { color: #ff0000; text-align: center; margin-top: 0; }
+        body { font-family: sans-serif; background: #000; color: #fff; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        .card { max-width: 380px; width: 100%; background: #111; padding: 15px; border-radius: 12px; border: 1px solid #333; box-sizing: border-box; }
+        h2 { color: red; text-align: center; font-size: 1.2rem; margin: 0 0 10px 0; }
         
-        /* Box Preview (Biar Gak Berantakan) */
-        .preview-window { 
-            width: 100%; aspect-ratio: 9/16; background: #000; overflow: hidden; 
-            position: relative; border-radius: 10px; border: 1px solid #444; margin-bottom: 15px;
-        }
-        #preview { 
-            position: absolute; height: 100%; left: 50%; top: 50%; 
-            transform: translate(-50%, -50%); transition: 0.1s; 
-        }
+        .v-box { width: 100%; aspect-ratio: 9/16; background: #000; overflow: hidden; position: relative; border-radius: 8px; margin-bottom: 15px; }
+        #preview { position: absolute; height: 100%; left: 50%; top: 50%; transform: translate(-50%, -50%); }
 
-        .input-item { margin-bottom: 15px; }
-        label { font-size: 11px; color: #888; display: block; margin-bottom: 5px; }
-        input[type="range"] { width: 100%; accent-color: #ff0000; }
-        input[type="number"], select, input[type="file"] { 
-            width: 100%; padding: 10px; background: #000; border: 1px solid #333; color: white; border-radius: 5px; box-sizing: border-box;
-        }
+        .row { display: flex; gap: 8px; margin-bottom: 10px; }
+        .input-group { flex: 1; display: flex; flex-direction: column; }
+        label { font-size: 10px; color: #888; margin-bottom: 3px; }
         
-        button { 
-            width: 100%; padding: 15px; background: #ff0000; color: white; border: none; 
-            border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 5px;
-        }
-        button:disabled { background: #444; }
+        input, button { padding: 10px; border-radius: 6px; border: 1px solid #333; background: #222; color: #fff; font-size: 12px; }
+        input[type="range"] { accent-color: red; padding: 0; }
+        
+        #renderBtn { background: red; font-weight: bold; margin-top: 10px; border: none; cursor: pointer; width: 100%; }
+        #renderBtn:disabled { background: #444; }
 
-        #status { font-size: 11px; color: #ffa502; text-align: center; margin-top: 10px; }
-        .p-bar { width: 100%; height: 6px; background: #111; border-radius: 3px; margin-top: 5px; display: none; overflow: hidden; }
-        #pFill { width: 0%; height: 100%; background: #ff0000; }
+        #status { font-size: 10px; color: #ffa502; text-align: center; margin: 10px 0; }
+        .progress { width: 100%; height: 5px; background: #222; border-radius: 3px; display: none; overflow: hidden; }
+        #fill { width: 0%; height: 100%; background: red; }
 
-        .promo { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .p-btn { padding: 8px; font-size: 9px; text-align: center; background: #222; color: #aaa; text-decoration: none; border-radius: 5px; border: 1px solid #333; }
+        .btn-link { display: block; text-align: center; padding: 8px; margin-top: 8px; background: #222; border-radius: 6px; font-size: 10px; color: #aaa; text-decoration: none; border: 1px solid #333; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>ALAN CLIPPER 🎬</h2>
+<div class="card">
+    <h2>ALAN STUDIO 🎬</h2>
     
-    <div class="input-item">
-        <label>PILIH VIDEO:</label>
-        <input type="file" id="videoLoad" accept="video/*">
-    </div>
+    <input type="file" id="videoIn" accept="video/*" style="width: 100%; margin-bottom: 10px;">
 
-    <div class="preview-window">
+    <div class="v-box">
         <video id="preview" muted loop></video>
     </div>
 
-    <div class="input-item">
-        <label>🔍 ZOOM (CIAT CIUT):</label>
-        <input type="range" id="zoomS" min="0.1" max="5" step="0.1" value="1" oninput="updateView()">
+    <div class="input-group">
+        <label>🔍 ZOOM:</label>
+        <input type="range" id="zoom" min="1" max="4" step="0.1" value="1" oninput="up()">
     </div>
 
-    <div class="input-item">
-        <label>↔️ GESER KIRI-KANAN:</label>
-        <input type="range" id="panS" min="0" max="100" step="1" value="50" oninput="updateView()">
+    <div class="input-group" style="margin-top: 10px;">
+        <label>↔️ GESER POSISI:</label>
+        <input type="range" id="pan" min="0" max="100" step="1" value="50" oninput="up()">
     </div>
 
-    <div style="display: flex; gap: 10px;">
-        <div class="input-item" style="flex: 1;">
-            <label>DURASI (DETIK):</label>
-            <input type="number" id="durT" value="15">
+    <div class="row" style="margin-top: 10px;">
+        <div class="input-group">
+            <label>MULAI (DETIK):</label>
+            <input type="number" id="start" value="0">
         </div>
-        <div class="input-item" style="flex: 1;">
-            <label>MULAI:</label>
-            <input type="number" id="startT" value="0">
+        <div class="input-group">
+            <label>DURASI:</label>
+            <input type="number" id="dur" value="15">
         </div>
     </div>
 
     <button id="renderBtn">GUNTING & DOWNLOAD HD</button>
     
-    <div id="status">Siap sikat, Lan!</div>
-    <div class="p-bar" id="pBar"><div id="pFill"></div></div>
+    <div id="status">Siap, Lan!</div>
+    <div class="progress" id="pBar"><div id="fill"></div></div>
 
-    <div class="promo">
-        <a href="https://t.me/+oWUzJccbisEwMTdl" class="p-btn" style="grid-column: span 2; background: #ff4444; color: white;">✨ TEKS OTOMATIS (CEK TELEGRAM)</a>
-        <a href="https://lynk.id/anonymous11" class="p-btn">🛒 PRODUK DIGITAL</a>
-        <a href="https://saweria.co/Alansupiandi" class="p-btn">☕ SAWERIA</a>
+    <a href="https://t.me/+oWUzJccbisEwMTdl" class="btn-link" style="background: #331111; color: #ff4444;">✨ AUTO TEKS (CEK TELEGRAM)</a>
+    <div class="row">
+        <a href="https://lynk.id/anonymous11" class="btn-link" style="flex:1;">🛒 PRODUK</a>
+        <a href="https://saweria.co/Alansupiandi" class="btn-link" style="flex:1;">☕ SAWERIA</a>
     </div>
 </div>
 
@@ -93,31 +79,23 @@
     const { createFFmpeg, fetchFile } = FFmpeg;
     const ffmpeg = createFFmpeg({ log: false });
 
-    const video = document.getElementById('preview');
-    const zoomS = document.getElementById('zoomS');
-    const panS = document.getElementById('panS');
+    const vid = document.getElementById('preview');
+    const zSl = document.getElementById('zoom');
+    const pSl = document.getElementById('pan');
 
-    function updateView() {
-        const z = zoomS.value;
-        const p = panS.value;
-        // Preview Visual biar sinkron
-        video.style.transform = `translate(-${p}%, -50%) scale(${z})`;
+    function up() {
+        vid.style.transform = `translate(-${pSl.value}%, -50%) scale(${zSl.value})`;
     }
 
-    document.getElementById('videoLoad').onchange = (e) => {
+    document.getElementById('videoIn').onchange = (e) => {
         const file = e.target.files[0];
-        if (file) {
-            video.src = URL.createObjectURL(file);
-            video.play();
-            updateView();
-        }
+        if (file) { vid.src = URL.createObjectURL(file); vid.play(); up(); }
     };
 
     document.getElementById('renderBtn').onclick = async () => {
-        const file = document.getElementById('videoLoad').files[0];
+        const file = document.getElementById('videoIn').files[0];
         if (!file) return;
 
-        // Iklan Popunder
         window.open('https://www.profitablecpmratenetwork.com/x9gjq9xm3?key=42622500e3fa317851d92d6c01535d48', '_blank');
 
         const btn = document.getElementById('renderBtn');
@@ -125,48 +103,41 @@
         document.getElementById('pBar').style.display = 'block';
 
         if (!ffmpeg.isLoaded()) await ffmpeg.load();
-        ffmpeg.FS('writeFile', 'in.mp4', await fetchFile(file));
+        ffmpeg.FS('writeFile', 'i.mp4', await fetchFile(file));
 
-        const z = zoomS.value;
-        const p = panS.value;
-        const start = document.getElementById('startT').value;
-        const dur = document.getElementById('durT').value;
-
-        // Filter Simpel Biar Suara Gak Ilang: Crop + Scale
-        // Rumus: crop=width:height:x:y
-        const filter = `crop=ih*9/16/${z}:ih/${z}:(iw-ih*9/16/${z})*${p}/100:0,scale=720:1280`;
+        const z = zSl.value;
+        const p = pSl.value;
+        // FILTER PALING AMAN & ENTENG (No Blur biar gak crash)
+        const vf = `crop=ih*9/16/${z}:ih/${z}:(iw-ih*9/16/${z})*${p}/100:0,scale=720:1280`;
 
         try {
             await ffmpeg.run(
-                '-i', 'in.mp4',
-                '-ss', start,
-                '-t', dur,
-                '-vf', filter,
-                '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '25',
-                '-c:a', 'aac', '-b:a', '128k', // Encode suara ulang biar pasti ada
-                'out.mp4'
+                '-i', 'i.mp4',
+                '-ss', document.getElementById('start').value,
+                '-t', document.getElementById('dur').value,
+                '-vf', vf,
+                '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '28',
+                '-c:a', 'aac', '-b:a', '96k', // Bitrate diturunin dikit biar RAM aman
+                'o.mp4'
             );
 
-            const data = ffmpeg.FS('readFile', 'out.mp4');
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
-            link.download = `alan_hd_${Date.now()}.mp4`;
-            link.click();
-            
+            const data = ffmpeg.FS('readFile', 'o.mp4');
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+            a.download = `alan_${Date.now()}.mp4`;
+            a.click();
             document.getElementById('status').innerText = "✅ SELESAI!";
         } catch (e) {
-            document.getElementById('status').innerText = "❌ Gagal Render.";
+            document.getElementById('status').innerText = "❌ RAM HP PENUH / CRASH.";
         }
-        
         btn.disabled = false;
     };
 
     ffmpeg.setProgress(({ ratio }) => {
-        document.getElementById('pFill').style.width = (ratio * 100) + '%';
-        document.getElementById('status').innerText = `Lagi Gunting: ${Math.floor(ratio * 100)}%`;
+        document.getElementById('fill').style.width = (ratio * 100) + '%';
+        document.getElementById('status').innerText = `Proses: ${Math.floor(ratio * 100)}%`;
     });
 </script>
 
-<script src="https://pl29289607.profitablecpmratenetwork.com/27/be/6e/27be6e116cecbc03e6b3dd5fc48e94c6.js"></script>
 </body>
 </html>
