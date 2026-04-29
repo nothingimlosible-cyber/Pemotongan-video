@@ -5,55 +5,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>Potong Video Online Gratis HD - Alan Video Clipper</title>
-    <meta name="description" content="Alat potong video online gratis kualitas HD tanpa watermark. Cepat, mudah, dan cocok untuk YouTube Shorts atau TikTok. Dibuat oleh Alan Studio.">
-    <meta name="keywords" content="potong video online, video trimmer hd, clipper video online, potong video shorts, alan studio, video cutter gratis">
+    <title>Potong Video Online HD - Alan Video Clipper</title>
+    <meta name="description" content="Alat potong video online gratis kualitas HD. Bisa atur posisi potongan Kiri, Tengah, Kanan untuk Shorts & TikTok. Dibuat oleh Alan Studio.">
     
     <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 
     <style>
         body { font-family: 'Segoe UI', sans-serif; background-color: #121212; color: #ffffff; display: flex; flex-direction: column; align-items: center; padding: 10px; margin: 0; overflow-x: hidden; }
-        
-        /* Container Pengaman - Biar gak ciut di HP */
         .container { max-width: 480px; width: 100%; background: #1e1e1e; padding: 20px; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); border: 1px solid #333; box-sizing: border-box; margin-top: 10px; }
-        
         h2 { color: #ff0000; text-align: center; margin-bottom: 20px; font-size: 1.4rem; }
         video { width: 100%; border-radius: 10px; background: #000; margin-bottom: 20px; border: 1px solid #444; }
         .control-panel { display: flex; flex-direction: column; gap: 15px; }
         .input-item { display: flex; flex-direction: column; gap: 8px; }
         label { font-size: 0.85em; color: #aaa; }
         input, select { padding: 12px; border-radius: 8px; border: 1px solid #444; background: #2a2a2a; color: #fff; font-size: 14px; width: 100%; box-sizing: border-box; }
-        
         button { padding: 15px; background-color: #ff0000; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; width: 100%; font-size: 1rem; }
         button:hover { background-color: #cc0000; }
         button:disabled { background-color: #555; cursor: not-allowed; }
-        
-        /* Slot Iklan */
         .ad-slot { margin: 15px 0; text-align: center; display: flex; justify-content: center; width: 100%; overflow: hidden; min-height: 50px; }
-        .ad-slot iframe { max-width: 100% !important; }
-
         .progress-wrapper { width: 100%; background-color: #333; border-radius: 10px; margin-top: 25px; height: 12px; overflow: hidden; display: none; border: 1px solid #444; }
         #progressBar { width: 0%; height: 100%; background-color: #ff0000; transition: width 0.3s ease; }
-        
         #status { margin-top: 10px; text-align: center; font-size: 0.85em; color: #ffa502; min-height: 24px; font-weight: 500; }
-        
         .result-area { margin-top: 20px; padding: 15px; background: #1e272e; border: 2px solid #3498db; border-radius: 10px; display: none; text-align: center; }
         .result-area a { color: #3498db; font-weight: bold; text-decoration: none; font-size: 1.1em; display: block; margin-top: 10px; }
-
         .info-box { margin-top: 15px; padding: 12px; background: rgba(0,0,0,0.4); border-radius: 10px; border-left: 4px solid #ffa502; text-align: left; }
         .info-box p { font-size: 0.75em; color: #ffa502; margin: 0 0 5px 0; font-weight: bold; }
         .info-box ul { font-size: 0.7em; color: #bbb; margin: 0; padding-left: 15px; line-height: 1.5; }
-
         .promo-section { margin-top: 30px; padding: 20px; background: #252525; border-radius: 12px; border: 1px solid #444; text-align: center; }
         .btn-group { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
         .btn-promo { flex: 1; min-width: 130px; padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; text-decoration: none; font-size: 0.85em; text-align: center; display: block; }
-        
         .btn-hype { background: #6c5ce7; color: white; }
         .btn-lynk { background: #00b894; color: white; }
         .btn-coffee { background: #f1c40f; color: #000; margin-top: 10px; width: 100%; }
         .btn-telegram { background: #0088cc; color: white; margin-top: 10px; width: 100%; }
-        
-        .watermark-text { margin-top: 20px; font-size: 0.8em; color: #666; font-style: italic; border-top: 1px solid #333; padding-top: 15px; }
     </style>
 </head>
 <body>
@@ -74,13 +58,24 @@
             <input type="file" id="videoInput" accept="video/*">
         </div>
         <video id="preview" controls></video>
+        
         <div class="input-item">
-            <label>Resolusi & Model:</label>
-            <select id="aspectRatio">
-                <option value="original">Original (Tanpa Render - Super Cepat)</option>
-                <option value="shorts">YouTube Shorts HD (9:16 - 720p)</option>
+            <label>Model Potongan:</label>
+            <select id="aspectRatio" onchange="toggleCropPos()">
+                <option value="original">Original (Super Cepat)</option>
+                <option value="shorts">YouTube Shorts HD (9:16)</option>
             </select>
         </div>
+
+        <div class="input-item" id="posContainer" style="display: none;">
+            <label>Fokus Area Video (Cegah Gambar Gak Jelas):</label>
+            <select id="cropPos">
+                <option value="center">Tengah (Standar)</option>
+                <option value="left">Sisi Kiri</option>
+                <option value="right">Sisi Kanan</option>
+            </select>
+        </div>
+
         <div class="input-item">
             <label>Mulai Detik ke:</label>
             <input type="number" id="startTime" value="0">
@@ -89,7 +84,7 @@
             <label>Durasi (Detik):</label>
             <input type="number" id="duration" value="15">
         </div>
-        <button id="trimBtn">Mulai Proses & Download</button>
+        <button id="trimBtn">Gunting Video & Buka Iklan</button>
     </div>
 
     <div class="ad-slot">
@@ -102,9 +97,9 @@
     <div class="info-box">
         <p>💡 Tips Alan Studio:</p>
         <ul>
-            <li>Hasil render dipatok **HD 720p** biar jernih di TikTok.</li>
-            <li>Gunakan file < 100MB di HP agar tidak lag/crash.</li>
-            <li>Klik download segera setelah proses selesai.</li>
+            <li><b>Fokus Area:</b> Pilih Kiri/Kanan kalau objek video kamu ada di pinggir.</li>
+            <li>Hasil HD 720p biar jernih di TikTok & Reels.</li>
+            <li>Tool gratis didukung iklan untuk biaya server.</li>
         </ul>
     </div>
     
@@ -115,7 +110,7 @@
 
     <div id="resultArea" class="result-area">
         <p style="color: #3498db; font-weight: bold; margin: 0;">✅ VIDEO SELESAI!</p>
-        <a id="downloadLink" href="#" target="_blank">⬇️ Klik Sini Untuk Download</a>
+        <a id="downloadLink" href="#" target="_blank">⬇️ Download Video Hasil Render</a>
     </div>
 
     <div class="promo-section">
@@ -126,7 +121,6 @@
             <a href="https://saweria.co/Alansupiandi" target="_blank" class="btn-promo btn-coffee">☕ Traktir Alan Kopi</a>
             <a href="https://t.me/+oWUzJccbisEwMTdl" target="_blank" class="btn-promo btn-telegram">📱 Gabung Grup Telegram</a>
         </div>
-        <div class="watermark-text">"Gratis buat kamu, cukup dukung lewat iklan ya"</div>
         <p style="margin-top: 15px; font-size: 0.7em; color: #555;">Copyright © 2026 | Alan Studio</p>
     </div>
 </div>
@@ -144,12 +138,17 @@
     const aspectRatio = document.getElementById('aspectRatio');
     const progressWrapper = document.getElementById('progressWrapper');
     const progressBar = document.getElementById('progressBar');
+    const posContainer = document.getElementById('posContainer');
+
+    function toggleCropPos() {
+        posContainer.style.display = aspectRatio.value === 'shorts' ? 'flex' : 'none';
+    }
 
     ffmpeg.setProgress(({ ratio }) => {
         const percentage = Math.floor(ratio * 100);
         if (percentage >= 0 && percentage <= 100) {
             progressBar.style.width = percentage + '%';
-            status.innerText = `Sedang Merender HD... ${percentage}%`;
+            status.innerText = `Sedang Memproses HD... ${percentage}%`;
         }
     });
 
@@ -162,11 +161,9 @@
         const file = videoInput.files[0];
         if (!file) return alert("Pilih filenya dulu!");
 
-        // 1. Buka Iklan Baru (Trik Cuan Alan)
         window.open('https://www.profitablecpmratenetwork.com/x9gjq9xm3?key=42622500e3fa317851d92d6c01535d48', '_blank');
         window.focus();
 
-        // 2. Mulai Proses FFmpeg
         trimBtn.disabled = true;
         resultArea.style.display = 'none';
         progressWrapper.style.display = 'block';
@@ -174,32 +171,30 @@
         
         try {
             if (!ffmpeg.isLoaded()) {
-                status.innerText = "Menghidupkan mesin HD...";
+                status.innerText = "Memuat mesin render...";
                 await ffmpeg.load();
             }
 
             const start = document.getElementById('startTime').value;
             const dur = document.getElementById('duration').value;
             const mode = aspectRatio.value;
+            const pos = document.getElementById('cropPos').value;
 
-            status.innerText = "Membaca file video...";
+            status.innerText = "Membaca file...";
             ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
 
             if (mode === 'original') {
-                // Kualitas asli, tanpa render ulang
                 await ffmpeg.run('-i', 'input.mp4', '-ss', `${start}`, '-t', `${dur}`, '-c', 'copy', 'output.mp4');
             } else {
-                // Paksa ke 720p HD untuk Shorts
+                // Logika Crop Dinamis (Kiri, Tengah, Kanan)
+                let cropVal = 'crop=ih*9/16:ih:(iw-ih*9/16)/2:0'; // Default Tengah
+                if (pos === 'left') cropVal = 'crop=ih*9/16:ih:0:0';
+                if (pos === 'right') cropVal = 'crop=ih*9/16:ih:iw-ih*9/16:0';
+
                 await ffmpeg.run(
-                    '-i', 'input.mp4', 
-                    '-ss', `${start}`, 
-                    '-t', `${dur}`, 
-                    '-vf', 'crop=ih*9/16:ih,scale=720:-2', 
-                    '-c:v', 'libx264', 
-                    '-preset', 'ultrafast', 
-                    '-crf', '25', 
-                    '-c:a', 'copy', 
-                    'output.mp4'
+                    '-i', 'input.mp4', '-ss', `${start}`, '-t', `${dur}`, 
+                    '-vf', `${cropVal},scale=720:-2`, 
+                    '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '25', '-c:a', 'copy', 'output.mp4'
                 );
             }
 
@@ -207,16 +202,15 @@
             const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
             
             downloadLink.href = url;
-            downloadLink.download = `alan_studio_hd_${Date.now()}.mp4`;
+            downloadLink.download = `alan_edit_hd_${Date.now()}.mp4`;
             resultArea.style.display = 'block';
-            status.innerText = "✅ SELESAI! Silakan download hasil kerjamu.";
+            status.innerText = "✅ SELESAI! Klik download sekarang.";
             
             ffmpeg.FS('unlink', 'input.mp4');
             ffmpeg.FS('unlink', 'output.mp4');
-            
         } catch (err) {
             console.error(err);
-            status.innerText = "HP Gak Kuat? Coba file lebih kecil/pendek.";
+            status.innerText = "Gagal. HP kepanasan atau file terlalu besar.";
             progressWrapper.style.display = 'none';
         } finally {
             trimBtn.disabled = false;
