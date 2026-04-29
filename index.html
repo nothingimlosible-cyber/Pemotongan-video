@@ -3,116 +3,60 @@
 <head>
     <script src="coi-serviceworker.js"></script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alan Studio - Pro Video Clipper</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Alan Studio Pro - Manual Edit</title>
     <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: white; display: flex; flex-direction: column; align-items: center; padding: 10px; margin: 0; }
-        .container { max-width: 450px; width: 100%; background: #1a1a1a; padding: 20px; border-radius: 20px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        h2 { text-align: center; color: #ff0000; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; }
+        body { font-family: sans-serif; background: #0f0f0f; color: white; margin: 0; display: flex; flex-direction: column; align-items: center; touch-action: none; }
+        .container { max-width: 450px; width: 100%; padding: 15px; box-sizing: border-box; }
         
-        /* Preview Area */
-        .preview-window { 
-            width: 100%; 
-            aspect-ratio: 9/16; 
-            background: #000; 
-            overflow: hidden; 
-            position: relative; 
-            border-radius: 12px; 
-            margin-bottom: 20px;
-            border: 2px solid #444;
+        /* Area Kerja Manual */
+        .editor-box { 
+            width: 100%; aspect-ratio: 9/16; background: #000; position: relative; 
+            border-radius: 15px; overflow: hidden; border: 2px solid #ff0000;
+            touch-action: none; cursor: move;
         }
-        /* Latar Blur Visual (Hanya Preview) */
-        #blur-bg {
-            position: absolute; width: 100%; height: 100%;
-            object-fit: cover; filter: blur(15px) brightness(0.5);
-            transform: scale(1.2); opacity: 0;
-        }
-        #preview { 
-            position: absolute; 
-            max-width: none;
-            left: 50%; top: 50%; 
-            transform: translate(-50%, -50%) scale(1);
-            transition: 0.1s; 
-            z-index: 2;
-        }
-
-        .controls { display: flex; flex-direction: column; gap: 15px; }
-        .input-group { display: flex; flex-direction: column; gap: 5px; }
-        label { font-size: 0.8em; color: #888; font-weight: bold; }
-        input[type="range"] { width: 100%; accent-color: #ff0000; cursor: pointer; }
-        select, input[type="number"], input[type="file"] { 
-            padding: 10px; border-radius: 8px; border: 1px solid #333; background: #252525; color: white; 
-        }
+        canvas { width: 100%; height: 100%; display: block; }
         
-        button { 
-            width: 100%; padding: 15px; background: #ff0000; color: white; border: none; 
-            border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px;
-            transition: 0.3s;
-        }
-        button:hover { background: #cc0000; transform: translateY(-2px); }
-        button:disabled { background: #444; cursor: not-allowed; }
-
-        #status { font-size: 0.8em; color: #ffa502; text-align: center; margin-top: 15px; font-weight: 500; }
-        .progress-container { width: 100%; height: 8px; background: #333; margin-top: 10px; border-radius: 4px; overflow: hidden; display: none; }
-        #progressBar { width: 0%; height: 100%; background: #ff0000; transition: 0.3s; }
+        .ui-panel { background: #1e1e1e; padding: 20px; border-radius: 15px; margin-top: 15px; }
+        .hint { font-size: 10px; color: #ffa502; text-align: center; margin-bottom: 10px; }
         
-        .result-box { 
-            margin-top: 20px; text-align: center; display: none; padding: 20px; 
-            background: #002b36; border-radius: 12px; border: 1px dashed #2aa198;
-        }
-        .download-btn { color: #2aa198; text-decoration: none; font-weight: bold; font-size: 1.1em; }
+        input, select, button { width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; border: none; font-weight: bold; }
+        button { background: #ff0000; color: white; cursor: pointer; }
+        #status { font-size: 12px; text-align: center; margin-top: 10px; color: #aaa; }
+        
+        .progress-bar { width: 100%; height: 8px; background: #333; border-radius: 4px; display: none; overflow: hidden; }
+        #progressFill { width: 0%; height: 100%; background: #ff0000; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>STUDIO PRO 🎬</h2>
-    
-    <div class="input-group">
-        <label>PILIH VIDEO:</label>
-        <input type="file" id="videoInput" accept="video/*">
+    <h2 style="color: #ff0000; text-align: center;">ALAN CLIPPER PRO 🎬</h2>
+    <p class="hint">Sentuh & Seret Video buat atur posisi! 👆</p>
+
+    <div class="editor-box" id="editor">
+        <canvas id="canvasPreview"></canvas>
     </div>
 
-    <div class="preview-window" id="pWindow">
-        <img id="blur-bg">
-        <video id="preview" muted loop></video>
-    </div>
-
-    <div class="controls">
-        <div class="input-group">
-            <label>LATAR BELAKANG:</label>
-            <select id="bgType" onchange="updateView()">
-                <option value="blur">Efek Blur (Estetik)</option>
-                <option value="black">Hitam Polos</option>
-            </select>
+    <div class="ui-panel">
+        <input type="file" id="videoLoad" accept="video/*">
+        
+        <div style="display: flex; gap: 10px;">
+            <div style="flex: 1;">
+                <label style="font-size: 10px;">MULAI (DETIK)</label>
+                <input type="number" id="startT" value="0">
+            </div>
+            <div style="flex: 1;">
+                <label style="font-size: 10px;">DURASI</label>
+                <input type="number" id="durT" value="15">
+            </div>
         </div>
 
-        <div class="input-group">
-            <label>🔍 ZOOM (0.1x - 5.0x):</label>
-            <input type="range" id="zoomVal" min="0.1" max="5" step="0.1" value="1" oninput="updateView()">
-            <span id="zoomDisp" style="font-size: 10px; text-align: right;">1.0x</span>
-        </div>
-
-        <div class="input-group">
-            <label>↔️ GESER HORIZONTAL:</label>
-            <input type="range" id="panVal" min="0" max="100" step="1" value="50" oninput="updateView()">
-        </div>
-
-        <div class="input-group">
-            <label>DURASI (DETIK):</label>
-            <input type="number" id="duration" value="15" min="1">
-        </div>
-
-        <button id="trimBtn">GUNTING & DOWNLOAD HD</button>
-    </div>
-    
-    <div id="status">Upload video dulu ya, guys...</div>
-    <div class="progress-container" id="pContainer"><div id="progressBar"></div></div>
-
-    <div id="resultBox" class="result-box">
-        <p>✅ BERHASIL DI-RENDER!</p>
-        <a id="downloadLink" href="#" class="download-btn">⬇️ DOWNLOAD VIDEO SEKARANG</a>
+        <button id="renderBtn">GUNTING & RENDER HD</button>
+        
+        <div id="status">Pilih video dulu ya Lan...</div>
+        <div class="progress-bar" id="pBar"><div id="progressFill"></div></div>
     </div>
 </div>
 
@@ -120,96 +64,106 @@
     const { createFFmpeg, fetchFile } = FFmpeg;
     const ffmpeg = createFFmpeg({ log: false });
 
-    const videoInput = document.getElementById('videoInput');
-    const preview = document.getElementById('preview');
-    const blurBg = document.getElementById('blur-bg');
-    const zoomSlider = document.getElementById('zoomVal');
-    const panSlider = document.getElementById('panVal');
-    const zoomDisp = document.getElementById('zoomDisp');
+    const canvas = document.getElementById('canvasPreview');
+    const ctx = canvas.getContext('2d');
+    const video = document.createElement('video');
+    
+    // Set resolusi canvas internal (9:16)
+    canvas.width = 720;
+    canvas.height = 1280;
 
-    function updateView() {
-        const zoom = zoomSlider.value;
-        const pan = panSlider.value;
-        const bg = document.getElementById('bgType').value;
+    let posX = 360, posY = 640, scale = 1;
+    let isDragging = false;
+    let lastMouseX, lastMouseY;
+
+    // 1. Logika Gambar Manual di Canvas
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        zoomDisp.innerText = zoom + 'x';
-        
-        // Update Preview Visual
-        preview.style.transform = `translate(-${pan}%, -50%) scale(${zoom})`;
-        
-        if(bg === 'blur') {
-            blurBg.style.opacity = "1";
-            blurBg.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"; // placeholder
-        } else {
-            blurBg.style.opacity = "0";
+        if (video.readyState >= 2) {
+            // Efek Blur Background Otomatis
+            ctx.filter = 'blur(20px) brightness(0.5)';
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            ctx.filter = 'none';
+
+            // Video Utama yang bisa di-drag
+            const vW = video.videoWidth * scale;
+            const vH = video.videoHeight * scale;
+            ctx.drawImage(video, posX - vW/2, posY - vH/2, vW, vH);
         }
+        requestAnimationFrame(draw);
     }
+    draw();
 
-    videoInput.onchange = ({ target }) => {
-        const file = target.files[0];
-        const url = URL.createObjectURL(file);
-        preview.src = url;
-        preview.play();
-        updateView();
+    // 2. Kontrol Jari / Mouse
+    const editor = document.getElementById('editor');
+    editor.addEventListener('mousedown', (e) => { isDragging = true; lastMouseX = e.clientX; lastMouseY = e.clientY; });
+    window.addEventListener('mouseup', () => isDragging = false);
+    window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        posX += (e.clientX - lastMouseX) * 2;
+        posY += (e.clientY - lastMouseY) * 2;
+        lastMouseX = e.clientX; lastMouseY = e.clientY;
+    });
+
+    // Zoom pake Scroll
+    editor.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        scale += e.deltaY * -0.001;
+        scale = Math.min(Math.max(.1, scale), 5);
+    });
+
+    // 3. Load Video
+    document.getElementById('videoLoad').onchange = (e) => {
+        video.src = URL.createObjectURL(e.target.files[0]);
+        video.loop = true;
+        video.play();
     };
 
-    document.getElementById('trimBtn').onclick = async () => {
-        const file = videoInput.files[0];
+    // 4. Render Magic
+    document.getElementById('renderBtn').onclick = async () => {
+        const file = document.getElementById('videoLoad').files[0];
         if (!file) return;
 
-        // Iklan Alan
+        // Iklan Alan Studio
         window.open('https://www.profitablecpmratenetwork.com/x9gjq9xm3?key=42622500e3fa317851d92d6c01535d48', '_blank');
 
-        const btn = document.getElementById('trimBtn');
-        btn.disabled = true;
-        document.getElementById('pContainer').style.display = 'block';
-        
-        if (!ffmpeg.isLoaded()) await ffmpeg.load();
+        document.getElementById('renderBtn').disabled = true;
+        document.getElementById('pBar').style.display = 'block';
 
+        if (!ffmpeg.isLoaded()) await ffmpeg.load();
         ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
 
-        const dur = document.getElementById('duration').value;
-        const z = zoomSlider.value;
-        const p = panSlider.value;
-        const bg = document.getElementById('bgType').value;
+        // Konversi koordinat canvas ke koordinat FFmpeg
+        const finalW = video.videoWidth * scale;
+        const finalH = video.videoHeight * scale;
+        const offX = (posX - finalW/2);
+        const offY = (posY - finalH/2);
 
-        // LOGIKA FFmpeg SAKTI UNTUK BLUR & ZOOM
-        // Kita bikin canvas 720x1280 (9:16)
-        let filter = "";
-        if (bg === 'blur') {
-            // Filter: Ambil video, scale ke background, blur, lalu tiban video asli yang di-zoom
-            filter = `[0:v]scale=720:1280,boxblur=20:10[bg];[0:v]scale=iw*${z}:-1[fg];[bg][fg]overlay=(W-w)*${p}/100:(H-h)/2:format=rgb,crop=720:1280`;
-        } else {
-            // Latar hitam
-            filter = `scale=iw*${z}:-1,pad=720:1280:(720-iw)/2:(1280-ih)/2:black,crop=720:1280:(720-720)*${p}/100:0`;
-        }
+        // Filter FFmpeg buat Blur + Posisi Manual
+        const filter = `[0:v]scale=720:1280,boxblur=20:10[bg];[0:v]scale=${finalW}:-1[fg];[bg][fg]overlay=${offX}:${offY},crop=720:1280`;
 
-        try {
-            await ffmpeg.run(
-                '-i', 'input.mp4', 
-                '-t', dur, 
-                '-lavfi', filter,
-                '-c:v', 'libx264', 
-                '-preset', 'ultrafast', 
-                '-crf', '28', 
-                'output.mp4'
-            );
+        await ffmpeg.run(
+            '-i', 'input.mp4',
+            '-ss', document.getElementById('startT').value,
+            '-t', document.getElementById('durT').value,
+            '-lavfi', filter,
+            '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '25', 'output.mp4'
+        );
 
-            const data = ffmpeg.FS('readFile', 'output.mp4');
-            document.getElementById('downloadLink').href = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
-            document.getElementById('downloadLink').download = `alan_pro_${Date.now()}.mp4`;
-            document.getElementById('resultBox').style.display = 'block';
-            document.getElementById('status').innerText = "✅ JADI, LAN! CEK HASILNYA.";
-        } catch (e) {
-            document.getElementById('status').innerText = "❌ HP Gak kuat render blur, Lan!";
-        }
+        const data = ffmpeg.FS('readFile', 'output.mp4');
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+        link.download = `alan_pro_manual.mp4`;
+        link.click();
         
-        btn.disabled = false;
+        document.getElementById('renderBtn').disabled = false;
+        document.getElementById('status').innerText = "✅ SIAP SEDOT!";
     };
 
     ffmpeg.setProgress(({ ratio }) => {
-        document.getElementById('progressBar').style.width = (ratio * 100) + '%';
-        document.getElementById('status').innerText = `Lagi Masak Blur: ${Math.floor(ratio * 100)}%`;
+        document.getElementById('progressFill').style.width = (ratio * 100) + '%';
+        document.getElementById('status').innerText = `Merender Manual: ${Math.floor(ratio * 100)}%`;
     });
 </script>
 
