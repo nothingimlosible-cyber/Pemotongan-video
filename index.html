@@ -3,41 +3,59 @@
 <head>
     <script src="coi-serviceworker.js"></script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
     <title>Potong Video Online HD - Alan Video Clipper</title>
-    <meta name="description" content="Alat potong video online gratis kualitas HD. Bisa atur posisi potongan Kiri, Tengah, Kanan untuk Shorts & TikTok. Dibuat oleh Alan Studio.">
+    <meta name="description" content="Alat potong video online gratis kualitas HD. Bisa zoom dan atur posisi potongan dengan mudah. Cocok untuk Shorts & TikTok. Dibuat oleh Alan Studio.">
     
     <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #121212; color: #ffffff; display: flex; flex-direction: column; align-items: center; padding: 10px; margin: 0; overflow-x: hidden; }
-        .container { max-width: 480px; width: 100%; background: #1e1e1e; padding: 20px; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); border: 1px solid #333; box-sizing: border-box; margin-top: 10px; }
-        h2 { color: #ff0000; text-align: center; margin-bottom: 20px; font-size: 1.4rem; }
-        video { width: 100%; border-radius: 10px; background: #000; margin-bottom: 20px; border: 1px solid #444; }
-        .control-panel { display: flex; flex-direction: column; gap: 15px; }
+        :root { --main-red: #ff0000; --bg-dark: #121212; --bg-panel: #1e1e1e; --text-main: #ffffff; --text-muted: #aaa; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: var(--bg-dark); color: var(--text-main); display: flex; flex-direction: column; align-items: center; padding: 10px; margin: 0; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 480px; width: 100%; background: var(--bg-panel); padding: 20px; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); border: 1px solid #333; box-sizing: border-box; margin-top: 10px; }
+        h2 { color: var(--main-red); text-align: center; margin-bottom: 20px; font-size: 1.5rem; font-weight: 700; }
+        video { width: 100%; border-radius: 10px; background: #000; margin-bottom: 20px; border: 1px solid #444; object-fit: contain; aspect-ratio: 16/9; }
+        .control-panel { display: flex; flex-direction: column; gap: 18px; }
         .input-item { display: flex; flex-direction: column; gap: 8px; }
-        label { font-size: 0.85em; color: #aaa; }
-        input, select { padding: 12px; border-radius: 8px; border: 1px solid #444; background: #2a2a2a; color: #fff; font-size: 14px; width: 100%; box-sizing: border-box; }
-        button { padding: 15px; background-color: #ff0000; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; width: 100%; font-size: 1rem; }
+        label { font-size: 0.9em; color: var(--text-muted); font-weight: 500; }
+        input[type="file"], select, input[type="number"] { padding: 12px; border-radius: 8px; border: 1px solid #444; background: #2a2a2a; color: #fff; font-size: 14px; width: 100%; box-sizing: border-box; transition: border-color 0.3s; }
+        input:focus, select:focus { border-color: var(--main-red); outline: none; }
+        
+        /* Styling Slider Modern */
+        input[type="range"] { -webkit-appearance: none; width: 100%; background: transparent; margin: 10px 0; }
+        input[type="range"]::-webkit-slider-runnable-track { width: 100%; height: 8px; cursor: pointer; background: #333; border-radius: 4px; }
+        input[type="range"]::-webkit-slider-thumb { height: 20px; width: 20px; border-radius: 50%; background: var(--main-red); cursor: pointer; -webkit-appearance: none; margin-top: -6px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        input[type="range"]::-moz-range-track { width: 100%; height: 8px; cursor: pointer; background: #333; border-radius: 4px; }
+        input[type="range"]::-moz-range-thumb { height: 20px; width: 20px; border: none; border-radius: 50%; background: var(--main-red); cursor: pointer; }
+
+        button { padding: 16px; background-color: var(--main-red); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: background-color 0.3s, transform 0.1s; margin-top: 10px; width: 100%; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; }
         button:hover { background-color: #cc0000; }
-        button:disabled { background-color: #555; cursor: not-allowed; }
+        button:active { transform: scale(0.98); }
+        button:disabled { background-color: #555; cursor: not-allowed; transform: scale(1); }
+        
         .ad-slot { margin: 15px 0; text-align: center; display: flex; justify-content: center; width: 100%; overflow: hidden; min-height: 50px; }
         .progress-wrapper { width: 100%; background-color: #333; border-radius: 10px; margin-top: 25px; height: 12px; overflow: hidden; display: none; border: 1px solid #444; }
-        #progressBar { width: 0%; height: 100%; background-color: #ff0000; transition: width 0.3s ease; }
+        #progressBar { width: 0%; height: 100%; background-color: var(--main-red); transition: width 0.3s ease; }
         #status { margin-top: 10px; text-align: center; font-size: 0.85em; color: #ffa502; min-height: 24px; font-weight: 500; }
-        .result-area { margin-top: 20px; padding: 15px; background: #1e272e; border: 2px solid #3498db; border-radius: 10px; display: none; text-align: center; }
-        .result-area a { color: #3498db; font-weight: bold; text-decoration: none; font-size: 1.1em; display: block; margin-top: 10px; }
-        .info-box { margin-top: 15px; padding: 12px; background: rgba(0,0,0,0.4); border-radius: 10px; border-left: 4px solid #ffa502; text-align: left; }
-        .info-box p { font-size: 0.75em; color: #ffa502; margin: 0 0 5px 0; font-weight: bold; }
-        .info-box ul { font-size: 0.7em; color: #bbb; margin: 0; padding-left: 15px; line-height: 1.5; }
-        .promo-section { margin-top: 30px; padding: 20px; background: #252525; border-radius: 12px; border: 1px solid #444; text-align: center; }
-        .btn-group { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-        .btn-promo { flex: 1; min-width: 130px; padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; text-decoration: none; font-size: 0.85em; text-align: center; display: block; }
+        
+        .result-area { margin-top: 20px; padding: 18px; background: #1e272e; border: 2px solid #3498db; border-radius: 10px; display: none; text-align: center; animation: fadeIn 0.5s; }
+        .result-area a { color: #3498db; font-weight: bold; text-decoration: none; font-size: 1.1em; display: block; margin-top: 12px; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .info-box { margin-top: 20px; padding: 15px; background: rgba(255,165,2,0.1); border-radius: 10px; border-left: 4px solid #ffa502; text-align: left; }
+        .info-box p { font-size: 0.85em; color: #ffa502; margin: 0 0 8px 0; font-weight: bold; }
+        .info-box ul { font-size: 0.8em; color: #bbb; margin: 0; padding-left: 18px; line-height: 1.6; }
+
+        .promo-section { margin-top: 35px; padding: 25px; background: #252525; border-radius: 12px; border: 1px solid #444; text-align: center; }
+        .btn-group { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 15px; }
+        .btn-promo { flex: 1; min-width: 140px; padding: 14px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; text-decoration: none; font-size: 0.85em; text-align: center; display: block; transition: opacity 0.3s; }
+        .btn-promo:hover { opacity: 0.9; }
         .btn-hype { background: #6c5ce7; color: white; }
         .btn-lynk { background: #00b894; color: white; }
-        .btn-coffee { background: #f1c40f; color: #000; margin-top: 10px; width: 100%; }
-        .btn-telegram { background: #0088cc; color: white; margin-top: 10px; width: 100%; }
+        .btn-coffee { background: #f1c40f; color: #000; margin-top: 12px; width: 100%; }
+        .btn-telegram { background: #0088cc; color: white; margin-top: 12px; width: 100%; }
+        .footer-text { margin-top: 20px; font-size: 0.75em; color: #666; }
     </style>
 </head>
 <body>
@@ -50,41 +68,45 @@
 </div>
 
 <div class="container">
-    <h2>Gunting Video Online HD 🎬</h2>
+    <h2>Gunting Video HD 🎬</h2>
     
     <div class="control-panel">
         <div class="input-item">
-            <label>Pilih File Video:</label>
+            <label>1. Pilih File Video:</label>
             <input type="file" id="videoInput" accept="video/*">
         </div>
+        
         <video id="preview" controls></video>
         
         <div class="input-item">
-            <label>Model Potongan:</label>
-            <select id="aspectRatio" onchange="toggleCropPos()">
-                <option value="original">Original (Super Cepat)</option>
+            <label>2. Model Potongan:</label>
+            <select id="aspectRatio" onchange="toggleCropControls()">
+                <option value="original">Original (Tanpa Render - Cepat)</option>
                 <option value="shorts">YouTube Shorts HD (9:16)</option>
             </select>
         </div>
 
-        <div class="input-item" id="posContainer" style="display: none;">
-            <label>Fokus Area Video (Cegah Gambar Gak Jelas):</label>
-            <select id="cropPos">
-                <option value="center">Tengah (Standar)</option>
-                <option value="left">Sisi Kiri</option>
-                <option value="right">Sisi Kanan</option>
-            </select>
+        <div id="cropControls" style="display: none; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; border: 1px solid #333;">
+            <div class="input-item" style="margin-bottom: 15px;">
+                <label>🔍 Zoom (Perbesar Gambar):</label>
+                <input type="range" id="zoomVal" min="1" max="2" step="0.05" value="1">
+            </div>
+            <div class="input-item">
+                <label>↔️ Geser Posisi (Kiri - Kanan):</label>
+                <input type="range" id="panVal" min="0" max="100" step="1" value="50">
+            </div>
         </div>
 
         <div class="input-item">
-            <label>Mulai Detik ke:</label>
-            <input type="number" id="startTime" value="0">
+            <label>3. Waktu Mulai (Detik):</label>
+            <input type="number" id="startTime" value="0" min="0">
         </div>
         <div class="input-item">
-            <label>Durasi (Detik):</label>
-            <input type="number" id="duration" value="15">
+            <label>4. Durasi Potongan (Detik):</label>
+            <input type="number" id="duration" value="15" min="1" max="60">
         </div>
-        <button id="trimBtn">Gunting Video & Buka Iklan</button>
+        
+        <button id="trimBtn">Mulai Gunting & Buka Iklan</button>
     </div>
 
     <div class="ad-slot">
@@ -95,33 +117,34 @@
     </div>
 
     <div class="info-box">
-        <p>💡 Tips Alan Studio:</p>
+        <p>💡 Tips Mandor Digital:</p>
         <ul>
-            <li><b>Fokus Area:</b> Pilih Kiri/Kanan kalau objek video kamu ada di pinggir.</li>
-            <li>Hasil HD 720p biar jernih di TikTok & Reels.</li>
-            <li>Tool gratis didukung iklan untuk biaya server.</li>
+            <li>Gunakan **Zoom & Geser** buat nentuin fokus video kamu.</li>
+            <li>Hasil render **HD 720p** biar jernih di TikTok/Shorts.</li>
+            <li>Di HP, gunakan file < 100MB agar tidak lag/crash.</li>
         </ul>
     </div>
     
-    <div id="status">Siap memproses video.</div>
+    <div id="status">Siap gunting video, Lan!</div>
     <div class="progress-wrapper" id="progressWrapper">
         <div id="progressBar"></div>
     </div>
 
     <div id="resultArea" class="result-area">
-        <p style="color: #3498db; font-weight: bold; margin: 0;">✅ VIDEO SELESAI!</p>
-        <a id="downloadLink" href="#" target="_blank">⬇️ Download Video Hasil Render</a>
+        <p style="color: #3498db; font-weight: bold; margin: 0;">✅ VIDEO SELESAI, LAN!</p>
+        <a id="downloadLink" href="#" target="_blank">⬇️ KLIK SINI BUAT DOWNLOAD ⬇️</a>
     </div>
 
     <div class="promo-section">
-        <h3>Support Alan Studio</h3>
+        <h3>Support Alan Studio Empire</h3>
         <div class="btn-group">
             <a href="https://lynk.id/anonymous11" target="_blank" class="btn-promo btn-lynk">🛒 Produk Digital</a>
             <a href="https://hypestoreaffiliate.vercel.app/" target="_blank" class="btn-promo btn-hype">🔥 Hype Store</a>
             <a href="https://saweria.co/Alansupiandi" target="_blank" class="btn-promo btn-coffee">☕ Traktir Alan Kopi</a>
             <a href="https://t.me/+oWUzJccbisEwMTdl" target="_blank" class="btn-promo btn-telegram">📱 Gabung Grup Telegram</a>
         </div>
-        <p style="margin-top: 15px; font-size: 0.7em; color: #555;">Copyright © 2026 | Alan Studio</p>
+        <p class="footer-text">"Pake sepuasnya, Lan. Jangan lupa dukung lewat iklan ya!"</p>
+        <p style="margin-top: 10px; font-size: 0.7em; color: #444;">Copyright © 2026 | Alan Studio</p>
     </div>
 </div>
 
@@ -138,58 +161,70 @@
     const aspectRatio = document.getElementById('aspectRatio');
     const progressWrapper = document.getElementById('progressWrapper');
     const progressBar = document.getElementById('progressBar');
-    const posContainer = document.getElementById('posContainer');
+    const cropControls = document.getElementById('cropControls');
 
-    function toggleCropPos() {
-        posContainer.style.display = aspectRatio.value === 'shorts' ? 'flex' : 'none';
+    // Tampilkan Slider cuma kalau pilih mode Shorts
+    function toggleCropControls() {
+        cropControls.style.display = aspectRatio.value === 'shorts' ? 'block' : 'none';
     }
 
     ffmpeg.setProgress(({ ratio }) => {
         const percentage = Math.floor(ratio * 100);
         if (percentage >= 0 && percentage <= 100) {
             progressBar.style.width = percentage + '%';
-            status.innerText = `Sedang Memproses HD... ${percentage}%`;
+            status.innerText = `Lagi Masak HD... ${percentage}%`;
         }
     });
 
     videoInput.onchange = function() {
         const file = videoInput.files[0];
-        if (file) preview.src = URL.createObjectURL(file);
+        if (file) {
+            preview.src = URL.createObjectURL(file);
+            status.innerText = "Video dimuat. Atur posisi & waktu mulainya, Lan!";
+        }
     };
 
     trimBtn.onclick = async function() {
         const file = videoInput.files[0];
-        if (!file) return alert("Pilih filenya dulu!");
+        if (!file) return alert("Pilih videonya dulu, Lan! Jangan ngebut-ngebut.");
 
+        // 1. Trik Cuan Maksimal (Buka Tab Iklan)
         window.open('https://www.profitablecpmratenetwork.com/x9gjq9xm3?key=42622500e3fa317851d92d6c01535d48', '_blank');
         window.focus();
 
+        // 2. Mulai Proses FFmpeg
         trimBtn.disabled = true;
         resultArea.style.display = 'none';
         progressWrapper.style.display = 'block';
         progressBar.style.width = '0%';
+        status.innerText = "Menyiapkan alat masak HD...";
         
         try {
             if (!ffmpeg.isLoaded()) {
-                status.innerText = "Memuat mesin render...";
+                status.innerText = "Memuat mesin render (sabar ya, Lan)...";
                 await ffmpeg.load();
             }
 
             const start = document.getElementById('startTime').value;
             const dur = document.getElementById('duration').value;
             const mode = aspectRatio.value;
-            const pos = document.getElementById('cropPos').value;
 
-            status.innerText = "Membaca file...";
+            status.innerText = "Membaca file video...";
             ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
 
             if (mode === 'original') {
+                // Proses super cepat, cuma potong durasi
+                status.innerText = "Gunting durasi doang... cepet banget ini mah!";
                 await ffmpeg.run('-i', 'input.mp4', '-ss', `${start}`, '-t', `${dur}`, '-c', 'copy', 'output.mp4');
             } else {
-                // Logika Crop Dinamis (Kiri, Tengah, Kanan)
-                let cropVal = 'crop=ih*9/16:ih:(iw-ih*9/16)/2:0'; // Default Tengah
-                if (pos === 'left') cropVal = 'crop=ih*9/16:ih:0:0';
-                if (pos === 'right') cropVal = 'crop=ih*9/16:ih:iw-ih*9/16:0';
+                // Proses render HD dengan Zoom & Pan
+                status.innerText = "Lagi ngerakit video HD sambil di-zoom... HP user lagi panas nih! 😂";
+                
+                const zoom = document.getElementById('zoomVal').value;
+                const pan = document.getElementById('panVal').value;
+                
+                // Rumus sakti Crop Dinamis berdasarkan Zoom & Pan
+                let cropVal = `crop=ih*9/16/${zoom}:ih/${zoom}:(iw-ih*9/16/${zoom})*${pan}/100:0`;
 
                 await ffmpeg.run(
                     '-i', 'input.mp4', '-ss', `${start}`, '-t', `${dur}`, 
@@ -202,15 +237,16 @@
             const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
             
             downloadLink.href = url;
-            downloadLink.download = `alan_edit_hd_${Date.now()}.mp4`;
+            downloadLink.download = `alan_studio_empire_hd_${Date.now()}.mp4`;
             resultArea.style.display = 'block';
-            status.innerText = "✅ SELESAI! Klik download sekarang.";
+            status.innerText = "✅ BERES, LAN! Langsung sedot hasilnya.";
             
             ffmpeg.FS('unlink', 'input.mp4');
             ffmpeg.FS('unlink', 'output.mp4');
+            
         } catch (err) {
             console.error(err);
-            status.innerText = "Gagal. HP kepanasan atau file terlalu besar.";
+            status.innerText = "Gagal, Lan! HP user-nya gak kuat atau videonya kegedean.";
             progressWrapper.style.display = 'none';
         } finally {
             trimBtn.disabled = false;
