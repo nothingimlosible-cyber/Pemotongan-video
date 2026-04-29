@@ -10,7 +10,7 @@
     <style>
         body { font-family: 'Segoe UI', sans-serif; background-color: #121212; color: #ffffff; display: flex; flex-direction: column; align-items: center; padding: 10px; margin: 0; overflow-x: hidden; }
         
-        /* Container dibuat fleksibel biar gak ciut di HP */
+        /* Container responsif biar gak ciut */
         .container { max-width: 480px; width: 100%; background: #1e1e1e; padding: 20px; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); border: 1px solid #333; box-sizing: border-box; margin-top: 10px; }
         
         h2 { color: #ff0000; text-align: center; margin-bottom: 25px; font-size: 1.5rem; }
@@ -24,8 +24,8 @@
         button:hover { background-color: #cc0000; }
         button:disabled { background-color: #555; cursor: not-allowed; }
         
-        /* Fix Iklan biar gak ngerusak lebar layar */
-        .ad-slot { margin: 10px 0; text-align: center; display: flex; justify-content: center; width: 100%; overflow: hidden; }
+        /* Slot Iklan aman */
+        .ad-slot { margin: 15px 0; text-align: center; display: flex; justify-content: center; width: 100%; overflow: hidden; min-height: 50px; }
         .ad-slot iframe { max-width: 100% !important; }
 
         .progress-wrapper { width: 100%; background-color: #333; border-radius: 10px; margin-top: 25px; height: 12px; overflow: hidden; display: none; border: 1px solid #444; }
@@ -99,16 +99,14 @@
         <p>💡 Tips Performa:</p>
         <ul>
             <li><b>Pengguna HP:</b> Gunakan file < 100MB agar tidak crash.</li>
-            <li><b>Pengguna PC/Laptop:</b> Bebas upload ukuran & durasi berapa pun!</li>
             <li>Hasil potong maksimal 60 detik untuk kecepatan terbaik.</li>
         </ul>
     </div>
     
+    <div id="status">Siap memproses video.</div>
     <div class="progress-wrapper" id="progressWrapper">
         <div id="progressBar"></div>
     </div>
-    
-    <div id="status">Siap memproses video.</div>
 
     <div id="resultArea" class="result-area">
         <p style="color: #3498db; font-weight: bold; margin: 0;">✅ SELESAI!</p>
@@ -159,10 +157,11 @@
         const file = videoInput.files[0];
         if (!file) return alert("Pilih filenya dulu!");
 
-        // 1. Buka link iklan baru yang parah itu haha
+        // 1. Buka Iklan Baru
         window.open('https://www.profitablecpmratenetwork.com/x9gjq9xm3?key=42622500e3fa317851d92d6c01535d48', '_blank');
+        window.focus(); // Fokus balik ke web utama
 
-        // 2. Mulai proses FFmpeg
+        // 2. Mulai Proses FFmpeg
         trimBtn.disabled = true;
         resultArea.style.display = 'none';
         progressWrapper.style.display = 'block';
@@ -193,14 +192,14 @@
             downloadLink.href = url;
             downloadLink.download = `alan_edit_${Date.now()}.mp4`;
             resultArea.style.display = 'block';
-            status.innerText = "Selesai! Klik download.";
+            status.innerText = "✅ Selesai! Klik download.";
             
             ffmpeg.FS('unlink', 'input.mp4');
             ffmpeg.FS('unlink', 'output.mp4');
             
         } catch (err) {
             console.error(err);
-            status.innerText = "Gagal. Video terlalu besar atau RAM penuh.";
+            status.innerText = "Gagal. Coba file lebih kecil.";
             progressWrapper.style.display = 'none';
         } finally {
             trimBtn.disabled = false;
