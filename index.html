@@ -3,223 +3,170 @@
 <head>
     <script src="coi-serviceworker.js"></script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ALAN CLIPPER PRO - Edit Video HD Online</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALAN CLIPPER PRO HD</title>
     <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
     <style>
-        :root { --red: #ff0000; --dark: #0a0a0a; --panel: #161616; --gray: #222; }
-        body { font-family: 'Inter', sans-serif; background: var(--dark); color: white; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
-        .container { max-width: 450px; width: 100%; }
+        body { font-family: sans-serif; background: #0a0a0a; color: white; display: flex; flex-direction: column; align-items: center; padding: 10px; margin: 0; }
+        .container { max-width: 420px; width: 100%; background: #161616; padding: 20px; border-radius: 15px; border: 1px solid #333; box-sizing: border-box; }
+        h2 { color: #ff0000; text-align: center; margin-top: 0; }
         
-        /* IKLAN */
-        .ad-top { width: 100%; min-height: 90px; margin-bottom: 15px; background: #000; display: flex; justify-content: center; overflow: hidden; border-radius: 8px; }
-
-        /* EDITOR */
-        .editor-container { background: var(--panel); border-radius: 20px; padding: 15px; border: 1px solid #333; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
-        h2 { color: var(--red); text-align: center; margin: 0 0 15px 0; font-size: 1.2rem; letter-spacing: 1px; text-transform: uppercase; }
-        
-        .preview-box { 
-            width: 100%; aspect-ratio: 9/16; background: #000; border-radius: 12px; 
-            position: relative; overflow: hidden; border: 1px solid #444; margin-bottom: 15px;
-            touch-action: none; cursor: move;
+        /* Box Preview (Biar Gak Berantakan) */
+        .preview-window { 
+            width: 100%; aspect-ratio: 9/16; background: #000; overflow: hidden; 
+            position: relative; border-radius: 10px; border: 1px solid #444; margin-bottom: 15px;
         }
-        canvas { width: 100%; height: 100%; display: block; }
-        
-        /* CONTROLS */
-        .control-group { background: var(--gray); padding: 12px; border-radius: 12px; margin-bottom: 10px; }
-        label { font-size: 11px; color: #888; font-weight: bold; display: block; margin-bottom: 5px; }
-        input[type="range"] { width: 100%; accent-color: var(--red); }
-        input[type="number"], input[type="file"] { width: 100%; background: #000; border: 1px solid #333; color: white; padding: 8px; border-radius: 6px; box-sizing: border-box; }
-        
-        .action-btn { width: 100%; padding: 15px; background: var(--red); color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; margin-top: 10px; }
-        .action-btn:active { transform: scale(0.95); }
-        .action-btn:disabled { background: #444; cursor: not-allowed; }
+        #preview { 
+            position: absolute; height: 100%; left: 50%; top: 50%; 
+            transform: translate(-50%, -50%); transition: 0.1s; 
+        }
 
-        .ai-feature { background: linear-gradient(45deg, #1e1e1e, #331111); border: 1px solid #ff4444; padding: 10px; border-radius: 10px; margin-top: 15px; text-align: center; cursor: pointer; }
-        .ai-feature span { font-size: 12px; font-weight: bold; color: #ff4444; }
+        .input-item { margin-bottom: 15px; }
+        label { font-size: 11px; color: #888; display: block; margin-bottom: 5px; }
+        input[type="range"] { width: 100%; accent-color: #ff0000; }
+        input[type="number"], select, input[type="file"] { 
+            width: 100%; padding: 10px; background: #000; border: 1px solid #333; color: white; border-radius: 5px; box-sizing: border-box;
+        }
+        
+        button { 
+            width: 100%; padding: 15px; background: #ff0000; color: white; border: none; 
+            border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 5px;
+        }
+        button:disabled { background: #444; }
 
-        #status { font-size: 11px; color: #ffa502; text-align: center; margin-top: 10px; min-height: 15px; }
+        #status { font-size: 11px; color: #ffa502; text-align: center; margin-top: 10px; }
         .p-bar { width: 100%; height: 6px; background: #111; border-radius: 3px; margin-top: 5px; display: none; overflow: hidden; }
-        #pFill { width: 0%; height: 100%; background: var(--red); transition: 0.3s; }
+        #pFill { width: 0%; height: 100%; background: #ff0000; }
 
-        .footer-promo { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
-        .p-btn { padding: 10px; font-size: 10px; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold; background: #252525; color: #ccc; border: 1px solid #333; }
+        .promo { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .p-btn { padding: 8px; font-size: 9px; text-align: center; background: #222; color: #aaa; text-decoration: none; border-radius: 5px; border: 1px solid #333; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="ad-top">
-            <script type="text/javascript">
-                atOptions = { 'key' : 'f77867edfdf48cb3157ccf8ac572bef3', 'format' : 'iframe', 'height' : 90, 'width' : 728, 'params' : {} };
-            </script>
-            <script type="text/javascript" src="https://www.highperformanceformat.com/f77867edfdf48cb3157ccf8ac572bef3/invoke.js"></script>
-        </div>
-
-        <div class="editor-container">
-            <h2>ALAN CLIPPER PRO 🎬</h2>
-            
-            <div class="preview-box" id="editor">
-                <canvas id="canvasPreview"></canvas>
-            </div>
-
-            <div class="control-group">
-                <label>1. PILIH FILE VIDEO</label>
-                <input type="file" id="videoLoad" accept="video/*">
-            </div>
-
-            <div class="control-group">
-                <label>2. ZOOM MANUAL (BESARKAN/KECILKAN)</label>
-                <input type="range" id="zoomS" min="0.1" max="5" step="0.1" value="1">
-            </div>
-
-            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                <div class="control-group" style="flex: 1; margin-bottom: 0;">
-                    <label>MULAI (DETIK)</label>
-                    <input type="number" id="startT" value="0">
-                </div>
-                <div class="control-group" style="flex: 1; margin-bottom: 0;">
-                    <label>DURASI</label>
-                    <input type="number" id="durT" value="15">
-                </div>
-            </div>
-
-            <button class="action-btn" id="renderBtn">GUNTING & RENDER HD</button>
-            
-            <div id="status">Pilih video dulu Lan...</div>
-            <div class="p-bar" id="pBar"><div id="pFill"></div></div>
-
-            <div class="ai-feature" onclick="window.open('https://t.me/+oWUzJccbisEwMTdl', '_blank')">
-                <span>✨ KLIK UNTUK FITUR TEKS OTOMATIS ✨</span>
-                <p style="font-size: 8px; color: #888; margin: 5px 0 0 0;">Dapatkan akses di Grup Telegram Alan Studio</p>
-            </div>
-        </div>
-
-        <div class="footer-promo">
-            <a href="https://lynk.id/anonymous11" class="p-btn">🛒 PRODUK DIGITAL</a>
-            <a href="https://hypestoreaffiliate.vercel.app/" class="p-btn">🔥 HYPE STORE</a>
-            <a href="https://saweria.co/Alansupiandi" class="p-btn" style="grid-column: span 2; background: #333;">☕ TRAKTIR ALAN KOPI (SAWERIA)</a>
-        </div>
-        
-        <p style="font-size: 9px; color: #444; text-align: center; margin-top: 20px;">Copyright © 2026 | Alan Studio Empire</p>
+<div class="container">
+    <h2>ALAN CLIPPER 🎬</h2>
+    
+    <div class="input-item">
+        <label>PILIH VIDEO:</label>
+        <input type="file" id="videoLoad" accept="video/*">
     </div>
+
+    <div class="preview-window">
+        <video id="preview" muted loop></video>
+    </div>
+
+    <div class="input-item">
+        <label>🔍 ZOOM (CIAT CIUT):</label>
+        <input type="range" id="zoomS" min="0.1" max="5" step="0.1" value="1" oninput="updateView()">
+    </div>
+
+    <div class="input-item">
+        <label>↔️ GESER KIRI-KANAN:</label>
+        <input type="range" id="panS" min="0" max="100" step="1" value="50" oninput="updateView()">
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+        <div class="input-item" style="flex: 1;">
+            <label>DURASI (DETIK):</label>
+            <input type="number" id="durT" value="15">
+        </div>
+        <div class="input-item" style="flex: 1;">
+            <label>MULAI:</label>
+            <input type="number" id="startT" value="0">
+        </div>
+    </div>
+
+    <button id="renderBtn">GUNTING & DOWNLOAD HD</button>
+    
+    <div id="status">Siap sikat, Lan!</div>
+    <div class="p-bar" id="pBar"><div id="pFill"></div></div>
+
+    <div class="promo">
+        <a href="https://t.me/+oWUzJccbisEwMTdl" class="p-btn" style="grid-column: span 2; background: #ff4444; color: white;">✨ TEKS OTOMATIS (CEK TELEGRAM)</a>
+        <a href="https://lynk.id/anonymous11" class="p-btn">🛒 PRODUK DIGITAL</a>
+        <a href="https://saweria.co/Alansupiandi" class="p-btn">☕ SAWERIA</a>
+    </div>
+</div>
 
 <script>
     const { createFFmpeg, fetchFile } = FFmpeg;
     const ffmpeg = createFFmpeg({ log: false });
 
-    const canvas = document.getElementById('canvasPreview');
-    const ctx = canvas.getContext('2d');
-    const video = document.createElement('video');
+    const video = document.getElementById('preview');
     const zoomS = document.getElementById('zoomS');
-    
-    canvas.width = 720;
-    canvas.height = 1280;
+    const panS = document.getElementById('panS');
 
-    let posX = 360, posY = 640, scale = 1;
-    let isDragging = false, lastX, lastY;
-
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (video.readyState >= 2) {
-            // Latar Belakang Blur
-            ctx.filter = 'blur(25px) brightness(0.4)';
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            ctx.filter = 'none';
-
-            // Video Utama (Bisa digeser)
-            scale = zoomS.value;
-            const vW = video.videoWidth * scale;
-            const vH = video.videoHeight * scale;
-            ctx.drawImage(video, posX - vW/2, posY - vH/2, vW, vH);
-        }
-        requestAnimationFrame(draw);
+    function updateView() {
+        const z = zoomS.value;
+        const p = panS.value;
+        // Preview Visual biar sinkron
+        video.style.transform = `translate(-${p}%, -50%) scale(${z})`;
     }
-    draw();
-
-    // Logika Geser Pakai Jari/Mouse
-    const editor = document.getElementById('editor');
-    editor.addEventListener('pointerdown', (e) => { isDragging = true; lastX = e.clientX; lastY = e.clientY; });
-    window.addEventListener('pointerup', () => isDragging = false);
-    window.addEventListener('pointermove', (e) => {
-        if (!isDragging) return;
-        posX += (e.clientX - lastX) * 2;
-        posY += (e.clientY - lastY) * 2;
-        lastX = e.clientX; lastY = e.clientY;
-    });
 
     document.getElementById('videoLoad').onchange = (e) => {
         const file = e.target.files[0];
         if (file) {
             video.src = URL.createObjectURL(file);
-            video.muted = true; video.loop = true; video.play();
-            document.getElementById('status').innerText = "Video masuk! Geser & Zoom sesukamu Lan.";
+            video.play();
+            updateView();
         }
     };
 
     document.getElementById('renderBtn').onclick = async () => {
         const file = document.getElementById('videoLoad').files[0];
-        if (!file) return alert("Pilih videonya dulu Lan!");
+        if (!file) return;
 
+        // Iklan Popunder
         window.open('https://www.profitablecpmratenetwork.com/x9gjq9xm3?key=42622500e3fa317851d92d6c01535d48', '_blank');
 
         const btn = document.getElementById('renderBtn');
         btn.disabled = true;
         document.getElementById('pBar').style.display = 'block';
 
-        if (!ffmpeg.isLoaded()) {
-            document.getElementById('status').innerText = "Lagi manasin mesin render...";
-            await ffmpeg.load();
-        }
-        
+        if (!ffmpeg.isLoaded()) await ffmpeg.load();
         ffmpeg.FS('writeFile', 'in.mp4', await fetchFile(file));
 
-        // Kalkulasi posisi final untuk FFmpeg
-        const fW = video.videoWidth * scale;
-        const offX = posX - fW/2;
-        const offY = posY - (video.videoHeight * scale)/2;
+        const z = zoomS.value;
+        const p = panS.value;
+        const start = document.getElementById('startT').value;
+        const dur = document.getElementById('durT').value;
 
-        const filter = `[0:v]scale=720:1280,boxblur=20:10[bg];[0:v]scale=${fW}:-1[fg];[bg][fg]overlay=${offX}:${offY},crop=720:1280`;
+        // Filter Simpel Biar Suara Gak Ilang: Crop + Scale
+        // Rumus: crop=width:height:x:y
+        const filter = `crop=ih*9/16/${z}:ih/${z}:(iw-ih*9/16/${z})*${p}/100:0,scale=720:1280`;
 
         try {
             await ffmpeg.run(
                 '-i', 'in.mp4',
-                '-ss', document.getElementById('startT').value,
-                '-t', document.getElementById('durT').value,
-                '-lavfi', filter,
-                '-c:v', 'libx264',
-                '-preset', 'ultrafast',
-                '-crf', '25',
-                '-c:a', 'aac',    // PERBAIKAN: Masak ulang suara biar muncul
-                '-b:a', '128k',   // Bitrate suara standar
-                '-map', '0:v:0',  // Ambil video
-                '-map', '0:a:0?', // Ambil audio (jika ada)
+                '-ss', start,
+                '-t', dur,
+                '-vf', filter,
+                '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '25',
+                '-c:a', 'aac', '-b:a', '128k', // Encode suara ulang biar pasti ada
                 'out.mp4'
             );
 
             const data = ffmpeg.FS('readFile', 'out.mp4');
             const link = document.createElement('a');
             link.href = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
-            link.download = `alan_studio_pro_${Date.now()}.mp4`;
+            link.download = `alan_hd_${Date.now()}.mp4`;
             link.click();
             
-            document.getElementById('status').innerText = "✅ SELESAI! Video siap sedot.";
+            document.getElementById('status').innerText = "✅ SELESAI!";
         } catch (e) {
-            document.getElementById('status').innerText = "❌ Gagal Render. Mungkin HP gak kuat.";
+            document.getElementById('status').innerText = "❌ Gagal Render.";
         }
         
         btn.disabled = false;
-        document.getElementById('pBar').style.display = 'none';
     };
 
     ffmpeg.setProgress(({ ratio }) => {
         document.getElementById('pFill').style.width = (ratio * 100) + '%';
-        document.getElementById('status').innerText = `Merender HD + Suara: ${Math.floor(ratio * 100)}%`;
+        document.getElementById('status').innerText = `Lagi Gunting: ${Math.floor(ratio * 100)}%`;
     });
 </script>
 
 <script src="https://pl29289607.profitablecpmratenetwork.com/27/be/6e/27be6e116cecbc03e6b3dd5fc48e94c6.js"></script>
-<script src="https://pl29289585.profitablecpmratenetwork.com/3f/56/5a/3f565a4f63267f72399fa0cf696d989f.js"></script>
-
 </body>
 </html>
