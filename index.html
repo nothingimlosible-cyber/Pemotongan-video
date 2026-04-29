@@ -4,61 +4,108 @@
     <script src="coi-serviceworker.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Alan Studio Pro - Manual Edit</title>
+    <title>ALAN CLIPPER PRO - Edit Video Tanpa Aplikasi</title>
     <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: #0f0f0f; color: white; margin: 0; display: flex; flex-direction: column; align-items: center; touch-action: none; }
-        .container { max-width: 450px; width: 100%; padding: 15px; box-sizing: border-box; }
+        :root { --red: #ff0000; --dark: #0a0a0a; --panel: #161616; --gray: #222; }
+        body { font-family: 'Inter', sans-serif; background: var(--dark); color: white; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
         
-        /* Area Kerja Manual */
-        .editor-box { 
-            width: 100%; aspect-ratio: 9/16; background: #000; position: relative; 
-            border-radius: 15px; overflow: hidden; border: 2px solid #ff0000;
+        .container { max-width: 450px; width: 100%; }
+        
+        /* HEADER & AD SLOT */
+        .ad-top { width: 100%; min-height: 90px; margin-bottom: 15px; background: #000; display: flex; justify-content: center; overflow: hidden; border-radius: 8px; }
+
+        /* EDITOR BOX */
+        .editor-container { background: var(--panel); border-radius: 20px; padding: 15px; border: 1px solid #333; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+        h2 { color: var(--red); text-align: center; margin: 0 0 15px 0; font-size: 1.2rem; letter-spacing: 1px; }
+        
+        .preview-box { 
+            width: 100%; aspect-ratio: 9/16; background: #000; border-radius: 12px; 
+            position: relative; overflow: hidden; border: 1px solid #444; margin-bottom: 15px;
             touch-action: none; cursor: move;
         }
         canvas { width: 100%; height: 100%; display: block; }
         
-        .ui-panel { background: #1e1e1e; padding: 20px; border-radius: 15px; margin-top: 15px; }
-        .hint { font-size: 10px; color: #ffa502; text-align: center; margin-bottom: 10px; }
+        /* CONTROLS */
+        .control-group { background: var(--gray); padding: 12px; border-radius: 12px; margin-bottom: 10px; }
+        label { font-size: 11px; color: #888; font-weight: bold; display: block; margin-bottom: 5px; }
+        input[type="range"] { width: 100%; accent-color: var(--red); }
+        input[type="number"], input[type="file"] { width: 100%; background: #000; border: 1px solid #333; color: white; padding: 8px; border-radius: 6px; box-sizing: border-box; }
         
-        input, select, button { width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; border: none; font-weight: bold; }
-        button { background: #ff0000; color: white; cursor: pointer; }
-        #status { font-size: 12px; text-align: center; margin-top: 10px; color: #aaa; }
-        
-        .progress-bar { width: 100%; height: 8px; background: #333; border-radius: 4px; display: none; overflow: hidden; }
-        #progressFill { width: 0%; height: 100%; background: #ff0000; }
+        .action-btn { width: 100%; padding: 15px; background: var(--red); color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; margin-top: 10px; }
+        .action-btn:active { transform: scale(0.95); }
+
+        /* AUTO TEXT BUTTON (PREMIUM LOOK) */
+        .ai-feature { background: linear-gradient(45deg, #1e1e1e, #331111); border: 1px solid #ff4444; padding: 10px; border-radius: 10px; margin-top: 15px; text-align: center; cursor: pointer; }
+        .ai-feature span { font-size: 12px; font-weight: bold; color: #ff4444; }
+
+        /* STATUS & PROGRESS */
+        #status { font-size: 11px; color: #ffa502; text-align: center; margin-top: 10px; height: 15px; }
+        .p-bar { width: 100%; height: 6px; background: #111; border-radius: 3px; margin-top: 5px; display: none; overflow: hidden; }
+        #pFill { width: 0%; height: 100%; background: var(--red); transition: 0.3s; }
+
+        /* FOOTER / PROMO */
+        .footer-promo { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+        .p-btn { padding: 10px; font-size: 10px; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold; background: #252525; color: #ccc; border: 1px solid #333; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2 style="color: #ff0000; text-align: center;">ALAN CLIPPER PRO 🎬</h2>
-    <p class="hint">Sentuh & Seret Video buat atur posisi! 👆</p>
+    <div class="container">
+        <div class="ad-top">
+            <script type="text/javascript">
+                atOptions = { 'key' : 'f77867edfdf48cb3157ccf8ac572bef3', 'format' : 'iframe', 'height' : 90, 'width' : 728, 'params' : {} };
+            </script>
+            <script type="text/javascript" src="https://www.highperformanceformat.com/f77867edfdf48cb3157ccf8ac572bef3/invoke.js"></script>
+        </div>
 
-    <div class="editor-box" id="editor">
-        <canvas id="canvasPreview"></canvas>
-    </div>
-
-    <div class="ui-panel">
-        <input type="file" id="videoLoad" accept="video/*">
-        
-        <div style="display: flex; gap: 10px;">
-            <div style="flex: 1;">
-                <label style="font-size: 10px;">MULAI (DETIK)</label>
-                <input type="number" id="startT" value="0">
+        <div class="editor-container">
+            <h2>ALAN CLIPPER PRO 🎬</h2>
+            
+            <div class="preview-box" id="editor">
+                <canvas id="canvasPreview"></canvas>
             </div>
-            <div style="flex: 1;">
-                <label style="font-size: 10px;">DURASI</label>
-                <input type="number" id="durT" value="15">
+
+            <div class="control-group">
+                <label>1. LOAD VIDEO</label>
+                <input type="file" id="videoLoad" accept="video/*">
+            </div>
+
+            <div class="control-group">
+                <label>2. ZOOM MANUAL (CIAT CIUT)</label>
+                <input type="range" id="zoomS" min="0.1" max="4" step="0.1" value="1">
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <div class="control-group" style="flex: 1; margin-bottom: 0;">
+                    <label>DURASI (DETIK)</label>
+                    <input type="number" id="durT" value="15">
+                </div>
+                <div class="control-group" style="flex: 1; margin-bottom: 0;">
+                    <label>MULAI DARI</label>
+                    <input type="number" id="startT" value="0">
+                </div>
+            </div>
+
+            <button class="action-btn" id="renderBtn">GUNTING & RENDER HD</button>
+            
+            <div id="status">Siap render video kamu, Lan!</div>
+            <div class="p-bar" id="pBar"><div id="pFill"></div></div>
+
+            <div class="ai-feature" onclick="window.open('https://t.me/+oWUzJccbisEwMTdl', '_blank')">
+                <span>✨ KLIK UNTUK FITUR TEKS OTOMATIS (AI) ✨</span>
+                <p style="font-size: 8px; color: #888; margin: 5px 0 0 0;">Tersedia eksklusif di Grup Telegram Alan Studio</p>
             </div>
         </div>
 
-        <button id="renderBtn">GUNTING & RENDER HD</button>
+        <div class="footer-promo">
+            <a href="https://lynk.id/anonymous11" class="p-btn">🛒 PRODUK DIGITAL</a>
+            <a href="https://hypestoreaffiliate.vercel.app/" class="p-btn">🔥 HYPE STORE</a>
+            <a href="https://saweria.co/Alansupiandi" class="p-btn" style="grid-column: span 2; background: #333;">☕ TRAKTIR ALAN KOPI (SAWERIA)</a>
+        </div>
         
-        <div id="status">Pilih video dulu ya Lan...</div>
-        <div class="progress-bar" id="pBar"><div id="progressFill"></div></div>
+        <p style="font-size: 9px; color: #444; text-align: center; margin-top: 20px;">Copyright © 2026 | Alan Studio Empire</p>
     </div>
-</div>
 
 <script>
     const { createFFmpeg, fetchFile } = FFmpeg;
@@ -67,26 +114,24 @@
     const canvas = document.getElementById('canvasPreview');
     const ctx = canvas.getContext('2d');
     const video = document.createElement('video');
+    const zoomS = document.getElementById('zoomS');
     
-    // Set resolusi canvas internal (9:16)
     canvas.width = 720;
     canvas.height = 1280;
 
     let posX = 360, posY = 640, scale = 1;
-    let isDragging = false;
-    let lastMouseX, lastMouseY;
+    let isDragging = false, lastX, lastY;
 
-    // 1. Logika Gambar Manual di Canvas
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
         if (video.readyState >= 2) {
-            // Efek Blur Background Otomatis
-            ctx.filter = 'blur(20px) brightness(0.5)';
+            // Blur Background
+            ctx.filter = 'blur(30px) brightness(0.4)';
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             ctx.filter = 'none';
 
-            // Video Utama yang bisa di-drag
+            // Main Video
+            scale = zoomS.value;
             const vW = video.videoWidth * scale;
             const vH = video.videoHeight * scale;
             ctx.drawImage(video, posX - vW/2, posY - vH/2, vW, vH);
@@ -95,77 +140,61 @@
     }
     draw();
 
-    // 2. Kontrol Jari / Mouse
+    // Drag Logic (Jari/Mouse)
     const editor = document.getElementById('editor');
-    editor.addEventListener('mousedown', (e) => { isDragging = true; lastMouseX = e.clientX; lastMouseY = e.clientY; });
-    window.addEventListener('mouseup', () => isDragging = false);
-    window.addEventListener('mousemove', (e) => {
+    editor.addEventListener('pointerdown', (e) => { isDragging = true; lastX = e.clientX; lastY = e.clientY; });
+    window.addEventListener('pointerup', () => isDragging = false);
+    window.addEventListener('pointermove', (e) => {
         if (!isDragging) return;
-        posX += (e.clientX - lastMouseX) * 2;
-        posY += (e.clientY - lastMouseY) * 2;
-        lastMouseX = e.clientX; lastMouseY = e.clientY;
+        posX += (e.clientX - lastX) * 2;
+        posY += (e.clientY - lastY) * 2;
+        lastX = e.clientX; lastY = e.clientY;
     });
 
-    // Zoom pake Scroll
-    editor.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        scale += e.deltaY * -0.001;
-        scale = Math.min(Math.max(.1, scale), 5);
-    });
-
-    // 3. Load Video
     document.getElementById('videoLoad').onchange = (e) => {
         video.src = URL.createObjectURL(e.target.files[0]);
-        video.loop = true;
-        video.play();
+        video.muted = true; video.loop = true; video.play();
     };
 
-    // 4. Render Magic
     document.getElementById('renderBtn').onclick = async () => {
         const file = document.getElementById('videoLoad').files[0];
-        if (!file) return;
+        if (!file) return alert("Pilih videonya dulu Lan!");
 
-        // Iklan Alan Studio
         window.open('https://www.profitablecpmratenetwork.com/x9gjq9xm3?key=42622500e3fa317851d92d6c01535d48', '_blank');
 
-        document.getElementById('renderBtn').disabled = true;
+        const btn = document.getElementById('renderBtn');
+        btn.disabled = true;
         document.getElementById('pBar').style.display = 'block';
 
         if (!ffmpeg.isLoaded()) await ffmpeg.load();
-        ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
+        ffmpeg.FS('writeFile', 'in.mp4', await fetchFile(file));
 
-        // Konversi koordinat canvas ke koordinat FFmpeg
-        const finalW = video.videoWidth * scale;
-        const finalH = video.videoHeight * scale;
-        const offX = (posX - finalW/2);
-        const offY = (posY - finalH/2);
+        const fW = video.videoWidth * scale;
+        const offX = posX - fW/2;
+        const offY = posY - (video.videoHeight * scale)/2;
 
-        // Filter FFmpeg buat Blur + Posisi Manual
-        const filter = `[0:v]scale=720:1280,boxblur=20:10[bg];[0:v]scale=${finalW}:-1[fg];[bg][fg]overlay=${offX}:${offY},crop=720:1280`;
+        const filter = `[0:v]scale=720:1280,boxblur=20:10[bg];[0:v]scale=${fW}:-1[fg];[bg][fg]overlay=${offX}:${offY},crop=720:1280`;
 
-        await ffmpeg.run(
-            '-i', 'input.mp4',
-            '-ss', document.getElementById('startT').value,
-            '-t', document.getElementById('durT').value,
-            '-lavfi', filter,
-            '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '25', 'output.mp4'
-        );
+        await ffmpeg.run('-i', 'in.mp4', '-ss', document.getElementById('startT').value, '-t', document.getElementById('durT').value, '-lavfi', filter, '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '25', 'out.mp4');
 
-        const data = ffmpeg.FS('readFile', 'output.mp4');
+        const data = ffmpeg.FS('readFile', 'out.mp4');
         const link = document.createElement('a');
         link.href = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
-        link.download = `alan_pro_manual.mp4`;
+        link.download = `alan_pro_${Date.now()}.mp4`;
         link.click();
         
-        document.getElementById('renderBtn').disabled = false;
-        document.getElementById('status').innerText = "✅ SIAP SEDOT!";
+        btn.disabled = false;
+        document.getElementById('status').innerText = "✅ BERES! CEK DOWNLOAD.";
     };
 
     ffmpeg.setProgress(({ ratio }) => {
-        document.getElementById('progressFill').style.width = (ratio * 100) + '%';
-        document.getElementById('status').innerText = `Merender Manual: ${Math.floor(ratio * 100)}%`;
+        document.getElementById('pFill').style.width = (ratio * 100) + '%';
+        document.getElementById('status').innerText = `Lagi Render: ${Math.floor(ratio * 100)}%`;
     });
 </script>
+
+<script src="https://pl29289607.profitablecpmratenetwork.com/27/be/6e/27be6e116cecbc03e6b3dd5fc48e94c6.js"></script>
+<script src="https://pl29289585.profitablecpmratenetwork.com/3f/56/5a/3f565a4f63267f72399fa0cf696d989f.js"></script>
 
 </body>
 </html>
