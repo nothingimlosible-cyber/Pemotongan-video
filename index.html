@@ -1,142 +1,233 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <!-- WAJIB: Jangan dihapus biar SharedArrayBuffer jalan -->
     <script src="coi-serviceworker.js"></script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ALAN CLIPPER FIX</title>
+    <title>ALAN CLIPPER FIX v3</title>
     <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+
     <style>
-        body { font-family: sans-serif; background: #000; color: #fff; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
-        .card { max-width: 380px; width: 100%; background: #111; padding: 15px; border-radius: 12px; border: 1px solid #333; box-sizing: border-box; }
-        h2 { color: red; text-align: center; font-size: 1.2rem; margin: 0 0 10px 0; }
-        
-        .v-box { width: 100%; aspect-ratio: 9/16; background: #000; overflow: hidden; position: relative; border-radius: 8px; margin-bottom: 15px; }
-        #preview { position: absolute; height: 100%; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+        :root {
+            --bg: #000; --card: #111; --border: #333;
+            --text: #fff; --muted: #888; --accent: #ff0000;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: system-ui, sans-serif; background: var(--bg); color: var(--text);
+            margin: 0; padding: 16px; display: flex; justify-content: center;
+        }
+      .card {
+            max-width: 400px; width: 100%; background: var(--card);
+            padding: 20px; border-radius: 16px; border: 1px solid var(--border);
+        }
+        h2 { color: var(--accent); text-align: center; font-size: 1.25rem; margin: 0 0 16px; }
 
-        .row { display: flex; gap: 8px; margin-bottom: 10px; }
-        .input-group { flex: 1; display: flex; flex-direction: column; }
-        label { font-size: 10px; color: #888; margin-bottom: 3px; }
-        
-        input, button { padding: 10px; border-radius: 6px; border: 1px solid #333; background: #222; color: #fff; font-size: 12px; }
-        input[type="range"] { accent-color: red; padding: 0; }
-        
-        #renderBtn { background: red; font-weight: bold; margin-top: 10px; border: none; cursor: pointer; width: 100%; }
-        #renderBtn:disabled { background: #444; }
+      .v-box {
+            width: 100%; aspect-ratio: 9/16; background: #000; overflow: hidden;
+            position: relative; border-radius: 12px; margin-bottom: 16px;
+        }
+        #preview {
+            position: absolute; height: 100%; left: 50%; top: 50%;
+            transform: translate(-50%, -50%); transform-origin: center;
+        }
 
-        #status { font-size: 10px; color: #ffa502; text-align: center; margin: 10px 0; }
-        .progress { width: 100%; height: 5px; background: #222; border-radius: 3px; display: none; overflow: hidden; }
-        #fill { width: 0%; height: 100%; background: red; }
+      .controls { display: flex; flex-direction: column; gap: 12px; }
+      .row { display: flex; gap: 10px; }
+      .input-group { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+        label { font-size: 11px; color: var(--muted); font-weight: 500; }
 
-        .btn-link { display: block; text-align: center; padding: 8px; margin-top: 8px; background: #222; border-radius: 6px; font-size: 10px; color: #aaa; text-decoration: none; border: 1px solid #333; }
+        input[type="file"], input[type="number"], select, button {
+            padding: 12px; border-radius: 8px; border: 1px solid var(--border);
+            background: #222; color: var(--text); font-size: 14px; width: 100%;
+        }
+        input[type="range"] { accent-color: var(--accent); width: 100%; }
+        select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23888' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1.753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+
+        #renderBtn {
+            background: var(--accent); font-weight: bold; border: none; cursor: pointer;
+            margin-top: 8px; transition: opacity.2s;
+        }
+        #renderBtn:disabled { background: #444; cursor: not-allowed; opacity:.6; }
+
+        #status { font-size: 12px; color: #ffa502; text-align: center; margin: 12px 0 8px; min-height: 16px; }
+      .progress { width: 100%; height: 6px; background: #222; border-radius: 3px; display: none; overflow: hidden; }
+        #fill { width: 0%; height: 100%; background: var(--accent); transition: width.1s; }
+
+      .links { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+      .btn-link {
+            display: block; text-align: center; padding: 10px; background: #222;
+            border-radius: 8px; font-size: 12px; color: #aaa; text-decoration: none; border: 1px solid var(--border);
+        }
+      .btn-link.tele { background: #331111; color: #ff4444; }
+      .row-links { display: flex; gap: 8px; }
+      .row-links.btn-link { flex: 1; }
     </style>
 </head>
 <body>
 
 <div class="card">
     <h2>ALAN STUDIO 🎬</h2>
-    
-    <input type="file" id="videoIn" accept="video/*" style="width: 100%; margin-bottom: 10px;">
+
+    <input type="file" id="videoIn" accept="video/*">
 
     <div class="v-box">
-        <video id="preview" muted loop></video>
+        <video id="preview" muted loop playsinline></video>
     </div>
 
-    <div class="input-group">
-        <label>🔍 ZOOM:</label>
-        <input type="range" id="zoom" min="1" max="4" step="0.1" value="1" oninput="up()">
-    </div>
-
-    <div class="input-group" style="margin-top: 10px;">
-        <label>↔️ GESER POSISI:</label>
-        <input type="range" id="pan" min="0" max="100" step="1" value="50" oninput="up()">
-    </div>
-
-    <div class="row" style="margin-top: 10px;">
+    <div class="controls">
         <div class="input-group">
-            <label>MULAI (DETIK):</label>
-            <input type="number" id="start" value="0">
+            <label for="zoom">🔍 ZOOM: <span id="zoomVal">1.0</span>x</label>
+            <input type="range" id="zoom" min="1" max="4" step="0.1" value="1">
         </div>
+
         <div class="input-group">
-            <label>DURASI:</label>
-            <input type="number" id="dur" value="15">
+            <label for="pan">↔️ GESER POSISI: <span id="panVal">50</span>%</label>
+            <input type="range" id="pan" min="0" max="100" step="1" value="50">
         </div>
+
+        <div class="row">
+            <div class="input-group">
+                <label for="start">MULAI (DETIK)</label>
+                <input type="number" id="start" value="0" min="0">
+            </div>
+            <div class="input-group">
+                <label for="dur">DURASI</label>
+                <input type="number" id="dur" value="15" min="1">
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label for="res">📱 KUALITAS OUTPUT</label>
+            <select id="res">
+                <option value="480x854">480p - Hemat RAM</option>
+                <option value="720x1280" selected>720p HD - Recommended</option>
+                <option value="1080x1920">1080p FHD - Berat</option>
+            </select>
+        </div>
+
+        <button id="renderBtn">GUNTING & DOWNLOAD</button>
+
+        <div id="status">Siap, Lan!</div>
+        <div class="progress" id="pBar"><div id="fill"></div></div>
     </div>
 
-    <button id="renderBtn">GUNTING & DOWNLOAD HD</button>
-    
-    <div id="status">Siap, Lan!</div>
-    <div class="progress" id="pBar"><div id="fill"></div></div>
-
-    <a href="https://t.me/+oWUzJccbisEwMTdl" class="btn-link" style="background: #331111; color: #ff4444;">✨ AUTO TEKS (CEK TELEGRAM)</a>
-    <div class="row">
-        <a href="https://lynk.id/anonymous11" class="btn-link" style="flex:1;">🛒 PRODUK</a>
-        <a href="https://saweria.co/Alansupiandi" class="btn-link" style="flex:1;">☕ SAWERIA</a>
+    <div class="links">
+        <a href="https://t.me/+oWUzJccbisEwMTdl" class="btn-link tele">✨ AUTO TEKS (CEK TELEGRAM)</a>
+        <div class="row-links">
+            <a href="https://lynk.id/anonymous11" class="btn-link">🛒 PRODUK</a>
+            <a href="https://saweria.co/Alansupiandi" class="btn-link">☕ SAWERIA</a>
+        </div>
     </div>
 </div>
 
 <script>
     const { createFFmpeg, fetchFile } = FFmpeg;
-    const ffmpeg = createFFmpeg({ log: false });
+    const ffmpeg = createFFmpeg({
+        log: false,
+        corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
+    });
 
+    // DOM Elements
     const vid = document.getElementById('preview');
-    const zSl = document.getElementById('zoom');
-    const pSl = document.getElementById('pan');
+    const zoomSlider = document.getElementById('zoom');
+    const panSlider = document.getElementById('pan');
+    const zoomVal = document.getElementById('zoomVal');
+    const panVal = document.getElementById('panVal');
+    const videoInput = document.getElementById('videoIn');
+    const renderBtn = document.getElementById('renderBtn');
+    const statusEl = document.getElementById('status');
+    const pBar = document.getElementById('pBar');
+    const fill = document.getElementById('fill');
+    const resSelect = document.getElementById('res');
 
-    function up() {
-        vid.style.transform = `translate(-${pSl.value}%, -50%) scale(${zSl.value})`;
+    // 1. PREVIEW UPDATE
+    function updatePreview() {
+        const z = zoomSlider.value;
+        const p = panSlider.value;
+        vid.style.transform = `translate(-${p}%, -50%) scale(${z})`;
+        zoomVal.textContent = parseFloat(z).toFixed(1);
+        panVal.textContent = p;
     }
+    zoomSlider.oninput = updatePreview;
+    panSlider.oninput = updatePreview;
 
-    document.getElementById('videoIn').onchange = (e) => {
+    // 2. LOAD VIDEO
+    videoInput.onchange = (e) => {
         const file = e.target.files[0];
-        if (file) { vid.src = URL.createObjectURL(file); vid.play(); up(); }
+        if (file) {
+            vid.src = URL.createObjectURL(file);
+            vid.play();
+            updatePreview();
+            statusEl.innerText = 'Video siap diedit';
+        }
     };
 
-    document.getElementById('renderBtn').onclick = async () => {
-        const file = document.getElementById('videoIn').files[0];
-        if (!file) return;
+    // 3. FFMPEG PROGRESS
+    ffmpeg.setProgress(({ ratio }) => {
+        const percent = Math.floor(ratio * 100);
+        fill.style.width = percent + '%';
+        statusEl.innerText = `Proses: ${percent}%`;
+    });
 
+    // 4. RENDER LOGIC
+    renderBtn.onclick = async () => {
+        const file = videoInput.files[0];
+        if (!file) return alert('Pilih video dulu, Lan!');
+
+        // Popunder Adsterra
         window.open('https://www.profitablecpmratenetwork.com/x9gjq9xm3?key=42622500e3fa317851d92d6c01535d48', '_blank');
 
-        const btn = document.getElementById('renderBtn');
-        btn.disabled = true;
-        document.getElementById('pBar').style.display = 'block';
-
-        if (!ffmpeg.isLoaded()) await ffmpeg.load();
-        ffmpeg.FS('writeFile', 'i.mp4', await fetchFile(file));
-
-        const z = zSl.value;
-        const p = pSl.value;
-        // FILTER PALING AMAN & ENTENG (No Blur biar gak crash)
-        const vf = `crop=ih*9/16/${z}:ih/${z}:(iw-ih*9/16/${z})*${p}/100:0,scale=720:1280`;
+        renderBtn.disabled = true;
+        pBar.style.display = 'block';
+        statusEl.innerText = 'Loading ffmpeg...';
 
         try {
+            if (!ffmpeg.isLoaded()) await ffmpeg.load();
+
+            statusEl.innerText = 'Nulis file ke memory...';
+            ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
+
+            const z = zoomSlider.value;
+            const p = panSlider.value;
+            const start = document.getElementById('start').value;
+            const dur = document.getElementById('dur').value;
+
+            // AMBIL RESOLUSI DARI DROPDOWN
+            const [w, h] = resSelect.value.split('x'); // "720x1280" -> ["720","1280"]
+
+            // FILTER DINAMIS: Crop dulu, baru scale ke resolusi pilihan
+            const vf = `crop=ih*9/16/${z}:ih/${z}:(iw-ih*9/16/${z})*${p}/100:0,scale=${w}:${h}`;
+
+            statusEl.innerText = `Render ${h}p jalan...`;
             await ffmpeg.run(
-                '-i', 'i.mp4',
-                '-ss', document.getElementById('start').value,
-                '-t', document.getElementById('dur').value,
+                '-i', 'input.mp4',
+                '-ss', start,
+                '-t', dur,
                 '-vf', vf,
                 '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '28',
-                '-c:a', 'aac', '-b:a', '96k', // Bitrate diturunin dikit biar RAM aman
-                'o.mp4'
+                '-c:a', 'aac', '-b:a', '96k',
+                'output.mp4'
             );
 
-            const data = ffmpeg.FS('readFile', 'o.mp4');
+            statusEl.innerText = 'Bikin link download...';
+            const data = ffmpeg.FS('readFile', 'output.mp4');
             const a = document.createElement('a');
             a.href = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
-            a.download = `alan_${Date.now()}.mp4`;
+            a.download = `alan_${h}p_${Date.now()}.mp4`;
             a.click();
-            document.getElementById('status').innerText = "✅ SELESAI!";
-        } catch (e) {
-            document.getElementById('status').innerText = "❌ RAM HP PENUH / CRASH.";
-        }
-        btn.disabled = false;
-    };
 
-    ffmpeg.setProgress(({ ratio }) => {
-        document.getElementById('fill').style.width = (ratio * 100) + '%';
-        document.getElementById('status').innerText = `Proses: ${Math.floor(ratio * 100)}%`;
-    });
+            statusEl.innerText = `✅ SELESAI ${h}p! Cek download.`;
+        } catch (e) {
+            console.error(e);
+            statusEl.innerText = "❌ GAGAL: RAM HP penuh. Coba 480p / durasi pendekin.";
+        } finally {
+            renderBtn.disabled = false;
+            setTimeout(() => { pBar.style.display = 'none'; fill.style.width = '0%'; }, 2000);
+        }
+    };
 </script>
 
 </body>
