@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <!-- coi-serviceworker.js UDAH GA PERLU, HAPUS AJA -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>ALAN CLIPPER NO FFMPEG</title>
+    <title>ALAN CLIPPER v7 - WYSIWYG</title>
 
     <style>
         :root {
@@ -16,23 +15,23 @@
             font-family: system-ui, sans-serif; background: var(--bg); color: var(--text);
             margin: 0; padding: 16px; display: flex; justify-content: center;
         }
-   .card {
+     .card {
             max-width: 400px; width: 100%; background: var(--card);
             padding: 20px; border-radius: 16px; border: 1px solid var(--border);
         }
         h2 { color: var(--accent); text-align: center; font-size: 1.25rem; margin: 0 0 16px; }
-   .v-box {
+     .v-box {
             width: 100%; aspect-ratio: 9/16; background: #000; overflow: hidden;
             position: relative; border-radius: 12px; margin-bottom: 16px;
         }
-        #preview, #canvasOut {
+        /* PREVIEW PAKE CANVAS JUGA BIAR 1:1 SAMA HASIL */
+        #previewCanvas {
             position: absolute; width: 100%; height: 100%; left: 0; top: 0;
-            object-fit: cover; /* INI KUNCINYA BIAR GA ITEM */
         }
-        #canvasOut { display: none; } /* Canvas buat rekam, ga ditampilin */
-   .controls { display: flex; flex-direction: column; gap: 12px; }
-   .row { display: flex; gap: 10px; }
-   .input-group { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+        #videoSrc { display: none; } /* Video asli disembunyiin */
+     .controls { display: flex; flex-direction: column; gap: 12px; }
+     .row { display: flex; gap: 10px; }
+     .input-group { flex: 1; display: flex; flex-direction: column; gap: 4px; }
         label { font-size: 11px; color: var(--muted); font-weight: 500; }
         input[type="file"], input[type="number"], select, button {
             padding: 12px; border-radius: 8px; border: 1px solid var(--border);
@@ -46,26 +45,26 @@
         }
         #renderBtn:disabled { background: #444; cursor: not-allowed; opacity:.6; }
         #status { font-size: 12px; color: #ffa502; text-align: center; margin: 12px 0 8px; min-height: 16px; }
-   .progress { width: 100%; height: 6px; background: #222; border-radius: 3px; display: none; overflow: hidden; }
+     .progress { width: 100%; height: 6px; background: #222; border-radius: 3px; display: none; overflow: hidden; }
         #fill { width: 0%; height: 100%; background: var(--accent); transition: width.1s; }
-   .links { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
-   .btn-link {
+     .links { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+     .btn-link {
             display: block; text-align: center; padding: 10px; background: #222;
             border-radius: 8px; font-size: 12px; color: #aaa; text-decoration: none; border: 1px solid var(--border);
         }
-   .btn-link.tele { background: #331111; color: #ff4444; }
-   .row-links { display: flex; gap: 8px; }
-   .row-links.btn-link { flex: 1; }
+     .btn-link.tele { background: #331111; color: #ff4444; }
+     .row-links { display: flex; gap: 8px; }
+     .row-links.btn-link { flex: 1; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>ALAN STUDIO 🎬 NO FFMPEG</h2>
+    <h2>ALAN STUDIO 🎬 WYSIWYG</h2>
     <input type="file" id="videoIn" accept="video/*">
     <div class="v-box">
-        <video id="preview" muted loop playsinline></video>
-        <canvas id="canvasOut"></canvas> <!-- Buat ngerekam -->
+        <video id="videoSrc" muted loop playsinline></video>
+        <canvas id="previewCanvas"></canvas> <!-- Preview & rekam pake canvas yg sama -->
     </div>
     <div class="controls">
         <div class="input-group">
@@ -83,18 +82,18 @@
             </div>
             <div class="input-group">
                 <label for="dur">DURASI</label>
-                <input type="number" id="dur" value="10" min="1" max="60">
+                <input type="number" id="dur" value="5" min="1" max="60">
             </div>
         <div class="input-group">
             <label for="res">📱 KUALITAS OUTPUT</label>
             <select id="res">
-                <option value="480x854">480p - Cepat</option>
+                <option value="480x854">480p</option>
                 <option value="720x1280" selected>720p HD</option>
                 <option value="1080x1920">1080p FHD</option>
             </select>
         </div>
         <button id="renderBtn">REKAM & DOWNLOAD</button>
-        <div id="status">Pilih video dulu, Lan! 100% Gratis</div>
+        <div id="status">Pilih video dulu, Lan! WYSIWYG ✅</div>
         <div class="progress" id="pBar"><div id="fill"></div></div>
     </div>
     <div class="links">
@@ -107,8 +106,8 @@
 </div>
 
 <script>
-    const vid = document.getElementById('preview');
-    const canvas = document.getElementById('canvasOut');
+    const videoSrc = document.getElementById('videoSrc');
+    const canvas = document.getElementById('previewCanvas');
     const ctx = canvas.getContext('2d');
     const zoomSlider = document.getElementById('zoom');
     const panSlider = document.getElementById('pan');
@@ -122,52 +121,73 @@
     const resSelect = document.getElementById('res');
 
     let animationId;
+    let isRecording = false;
 
-    function updatePreview() {
+    // RUMUS CROP 1:1 BUAT PREVIEW & REKAM
+    function drawFrame() {
+        if (videoSrc.paused || videoSrc.ended) return;
+
         const z = parseFloat(zoomSlider.value);
         const p = parseFloat(panSlider.value);
-        const scale = z;
-        const translateX = (p - 50) * (z - 1) * 0.9;
-        vid.style.transform = `translate(calc(-50% + ${translateX}%), -50%) scale(${scale})`;
-        zoomVal.textContent = z.toFixed(1);
-        panVal.textContent = p;
+        const [w, h] = resSelect.value.split('x').map(Number);
+
+        // Set ukuran canvas ngikut resolusi pilihan
+        canvas.width = w;
+        canvas.height = h;
+
+        const vidW = videoSrc.videoWidth;
+        const vidH = videoSrc.videoHeight;
+
+        // 1. Hitung area yg mau di-crop dari video asli
+        const cropH = vidH / z;
+        const cropW = cropH * 9/16; // Paksa 9:16
+        const cropX = (vidW - cropW) * p/100;
+        const cropY = (vidH - cropH) / 2; // Tengah vertikal
+
+        // 2. Gambar ke canvas. Ini yg dipake buat preview & rekam
+        ctx.drawImage(videoSrc, cropX, cropY, cropW, cropH, 0, 0, w, h);
+
+        if (!isRecording) animationId = requestAnimationFrame(drawFrame);
     }
-    zoomSlider.oninput = updatePreview;
-    panSlider.oninput = updatePreview;
+
+    function updateUI() {
+        zoomVal.textContent = parseFloat(zoomSlider.value).toFixed(1);
+        panVal.textContent = panSlider.value;
+    }
+    zoomSlider.oninput = updateUI;
+    panSlider.oninput = updateUI;
 
     videoInput.onchange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            vid.src = URL.createObjectURL(file);
-            vid.play().catch(()=>{});
-            updatePreview();
-            statusEl.innerText = 'Video siap. Atur zoom & durasi.';
+            videoSrc.src = URL.createObjectURL(file);
+            videoSrc.onloadedmetadata = () => {
+                videoSrc.play();
+                drawFrame(); // Mulai preview
+                statusEl.innerText = 'Video siap. Atur frame terus REKAM.';
+            }
         }
     };
 
-    // KUNCINYA: REKAM CANVAS PAKE MEDIARECORDER
     renderBtn.onclick = async () => {
-        if (!vid.src) return alert('Pilih video dulu, Lan!');
+        if (!videoSrc.src) return alert('Pilih video dulu, Lan!');
 
-        // Popunder Adsterra
         window.open('https://www.profitablecpmratenetwork.com/x9gjq9xm3?key=42622500e3fa317851d92d6c01535d48', '_blank');
 
         renderBtn.disabled = true;
+        isRecording = true;
         pBar.style.display = 'block';
 
+        const start = parseFloat(document.getElementById('start').value);
+        const dur = parseFloat(document.getElementById('dur').value) * 1000;
         const [w, h] = resSelect.value.split('x').map(Number);
         canvas.width = w;
         canvas.height = h;
 
-        const start = parseFloat(document.getElementById('start').value);
-        const dur = parseFloat(document.getElementById('dur').value) * 1000; // ms
+        videoSrc.currentTime = start;
+        await videoSrc.play();
 
-        // 1. Set video ke detik start
-        vid.currentTime = start;
-        await vid.play();
-
-        // 2. Setup MediaRecorder
-        const stream = canvas.captureStream(30); // 30fps
+        const stream = canvas.captureStream(30);
         const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
         const chunks = [];
 
@@ -178,52 +198,39 @@
             a.href = URL.createObjectURL(blob);
             a.download = `alan_${h}p_${Date.now()}.webm`;
             a.click();
-            statusEl.innerText = `✅ SELESAI ${h}p! Cek Download.`;
+            statusEl.innerText = `✅ BERHASIL! Yang kamu liat = yang ke-download.`;
             renderBtn.disabled = false;
+            isRecording = false;
             pBar.style.display = 'none';
-            vid.pause();
+            drawFrame(); // Balik ke mode preview
         };
 
-        // 3. Fungsi buat gambar video ke canvas tiap frame
-        function drawFrame() {
-            const z = parseFloat(zoomSlider.value);
-            const p = parseFloat(panSlider.value);
-
-            // Rumus crop 9:16 manual pake canvas
-            const vidW = vid.videoWidth;
-            const vidH = vid.videoHeight;
-            const cropW = vidH / z * 9/16;
-            const cropH = vidH / z;
-            const cropX = (vidW - cropW) * p/100;
-            const cropY = 0;
-
-            ctx.drawImage(vid, cropX, cropY, cropW, cropH, 0, 0, w, h);
-            animationId = requestAnimationFrame(drawFrame);
+        // Fungsi rekam manual biar sinkron
+        function recordLoop() {
+            if (!isRecording) return;
+            drawFrame();
+            requestAnimationFrame(recordLoop);
         }
 
-        // 4. Mulai rekam
         recorder.start();
-        drawFrame();
+        recordLoop();
         statusEl.innerText = `Merekam ${dur/1000} detik...`;
 
-        // Progress bar manual
         let elapsed = 0;
         const interval = setInterval(() => {
             elapsed += 100;
             fill.style.width = `${(elapsed/dur)*100}%`;
-            statusEl.innerText = `Merekam... ${Math.ceil((dur-elapsed)/1000)}s lagi`;
         }, 100);
 
-        // 5. Stop setelah durasi habis
         setTimeout(() => {
-            cancelAnimationFrame(animationId);
+            isRecording = false;
             recorder.stop();
             clearInterval(interval);
             fill.style.width = '100%';
         }, dur);
     };
 
-    statusEl.innerText = 'Siap! No ffmpeg, RAM aman ✅';
+    statusEl.innerText = 'Siap! WYSIWYG - No ffmpeg ✅';
 </script>
 
 </body>
