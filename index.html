@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <!-- WAJIB: Jangan dihapus biar SharedArrayBuffer jalan -->
     <script src="coi-serviceworker.js"></script>
-
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ALAN CLIPPER FIX v3</title>
-    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>ALAN CLIPPER FIX v4</title>
+    <!-- Pake ffmpeg.wasm versi baru biar stabil di HP -->
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
+    <script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
 
     <style>
         :root {
@@ -19,24 +19,28 @@
             font-family: system-ui, sans-serif; background: var(--bg); color: var(--text);
             margin: 0; padding: 16px; display: flex; justify-content: center;
         }
-      .card {
+     .card {
             max-width: 400px; width: 100%; background: var(--card);
             padding: 20px; border-radius: 16px; border: 1px solid var(--border);
         }
         h2 { color: var(--accent); text-align: center; font-size: 1.25rem; margin: 0 0 16px; }
 
-      .v-box {
+     .v-box {
             width: 100%; aspect-ratio: 9/16; background: #000; overflow: hidden;
             position: relative; border-radius: 12px; margin-bottom: 16px;
         }
+        /* FIX 1: Biar video selalu keliatan pas di-zoom/geser */
         #preview {
-            position: absolute; height: 100%; left: 50%; top: 50%;
-            transform: translate(-50%, -50%); transform-origin: center;
+            position: absolute;
+            width: 100%; height: auto;
+            left: 50%; top: 50%;
+            transform: translate(-50%, -50%);
+            transform-origin: center center;
         }
 
-      .controls { display: flex; flex-direction: column; gap: 12px; }
-      .row { display: flex; gap: 10px; }
-      .input-group { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+     .controls { display: flex; flex-direction: column; gap: 12px; }
+     .row { display: flex; gap: 10px; }
+     .input-group { flex: 1; display: flex; flex-direction: column; gap: 4px; }
         label { font-size: 11px; color: var(--muted); font-weight: 500; }
 
         input[type="file"], input[type="number"], select, button {
@@ -53,17 +57,17 @@
         #renderBtn:disabled { background: #444; cursor: not-allowed; opacity:.6; }
 
         #status { font-size: 12px; color: #ffa502; text-align: center; margin: 12px 0 8px; min-height: 16px; }
-      .progress { width: 100%; height: 6px; background: #222; border-radius: 3px; display: none; overflow: hidden; }
+     .progress { width: 100%; height: 6px; background: #222; border-radius: 3px; display: none; overflow: hidden; }
         #fill { width: 0%; height: 100%; background: var(--accent); transition: width.1s; }
 
-      .links { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
-      .btn-link {
+     .links { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+     .btn-link {
             display: block; text-align: center; padding: 10px; background: #222;
             border-radius: 8px; font-size: 12px; color: #aaa; text-decoration: none; border: 1px solid var(--border);
         }
-      .btn-link.tele { background: #331111; color: #ff4444; }
-      .row-links { display: flex; gap: 8px; }
-      .row-links.btn-link { flex: 1; }
+     .btn-link.tele { background: #331111; color: #ff4444; }
+     .row-links { display: flex; gap: 8px; }
+     .row-links.btn-link { flex: 1; }
     </style>
 </head>
 <body>
@@ -74,7 +78,7 @@
     <input type="file" id="videoIn" accept="video/*">
 
     <div class="v-box">
-        <video id="preview" muted loop playsinline></video>
+        <video id="preview" muted loop playsinline autoplay></video>
     </div>
 
     <div class="controls">
@@ -95,14 +99,14 @@
             </div>
             <div class="input-group">
                 <label for="dur">DURASI</label>
-                <input type="number" id="dur" value="15" min="1">
+                <input type="number" id="dur" value="15" min="1" max="60">
             </div>
         </div>
 
         <div class="input-group">
             <label for="res">📱 KUALITAS OUTPUT</label>
             <select id="res">
-                <option value="480x854">480p - Hemat RAM</option>
+                <option value="480x854">480p - Paling Enteng</option>
                 <option value="720x1280" selected>720p HD - Recommended</option>
                 <option value="1080x1920">1080p FHD - Berat</option>
             </select>
@@ -110,7 +114,7 @@
 
         <button id="renderBtn">GUNTING & DOWNLOAD</button>
 
-        <div id="status">Siap, Lan!</div>
+        <div id="status">Pilih video dulu, Lan!</div>
         <div class="progress" id="pBar"><div id="fill"></div></div>
     </div>
 
@@ -123,14 +127,12 @@
     </div>
 </div>
 
-<script>
-    const { createFFmpeg, fetchFile } = FFmpeg;
-    const ffmpeg = createFFmpeg({
-        log: false,
-        corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
-    });
+<script type="module">
+    const { FFmpeg } = FFmpegWASM;
+    const { fetchFile, toBlobURL } = FFmpegUtil;
+    const ffmpeg = new FFmpeg();
 
-    // DOM Elements
+    // DOM
     const vid = document.getElementById('preview');
     const zoomSlider = document.getElementById('zoom');
     const panSlider = document.getElementById('pan');
@@ -143,91 +145,103 @@
     const fill = document.getElementById('fill');
     const resSelect = document.getElementById('res');
 
-    // 1. PREVIEW UPDATE
+    // FIX 2: Rumus preview biar sama kayak hasil ffmpeg
     function updatePreview() {
-        const z = zoomSlider.value;
-        const p = panSlider.value;
-        vid.style.transform = `translate(-${p}%, -50%) scale(${z})`;
-        zoomVal.textContent = parseFloat(z).toFixed(1);
+        const z = parseFloat(zoomSlider.value);
+        const p = parseFloat(panSlider.value);
+
+        // Biar preview ga item pas di-zoom
+        const scale = z;
+        const translateX = (p - 50) * (z - 1) * 0.9; // Formula biar gesernya pas
+
+        vid.style.transform = `translate(calc(-50% + ${translateX}%), -50%) scale(${scale})`;
+        zoomVal.textContent = z.toFixed(1);
         panVal.textContent = p;
     }
     zoomSlider.oninput = updatePreview;
     panSlider.oninput = updatePreview;
 
-    // 2. LOAD VIDEO
     videoInput.onchange = (e) => {
         const file = e.target.files[0];
         if (file) {
             vid.src = URL.createObjectURL(file);
-            vid.play();
+            vid.play().catch(()=>{}); // Autoplay suka di-block, kita paksa
             updatePreview();
-            statusEl.innerText = 'Video siap diedit';
+            statusEl.innerText = 'Video siap. Atur zoom & geser.';
         }
     };
 
-    // 3. FFMPEG PROGRESS
-    ffmpeg.setProgress(({ ratio }) => {
-        const percent = Math.floor(ratio * 100);
+    ffmpeg.on('progress', ({ progress }) => {
+        const percent = Math.floor(progress * 100);
         fill.style.width = percent + '%';
         statusEl.innerText = `Proses: ${percent}%`;
     });
 
-    // 4. RENDER LOGIC
     renderBtn.onclick = async () => {
         const file = videoInput.files[0];
         if (!file) return alert('Pilih video dulu, Lan!');
 
-        // Popunder Adsterra
         window.open('https://www.profitablecpmratenetwork.com/x9gjq9xm3?key=42622500e3fa317851d92d6c01535d48', '_blank');
 
         renderBtn.disabled = true;
         pBar.style.display = 'block';
-        statusEl.innerText = 'Loading ffmpeg...';
+        statusEl.innerText = 'Loading ffmpeg core...';
 
         try {
-            if (!ffmpeg.isLoaded()) await ffmpeg.load();
+            // FIX 3: Pake versi 0.12.10 biar ga crash di HP
+            if (!ffmpeg.loaded) {
+                await ffmpeg.load({
+                    coreURL: await toBlobURL(`https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js`, 'text/javascript'),
+                    wasmURL: await toBlobURL(`https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm`, 'application/wasm'),
+                });
+            }
 
-            statusEl.innerText = 'Nulis file ke memory...';
-            ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
+            statusEl.innerText = 'Nulis file ke RAM...';
+            await ffmpeg.writeFile('input.mp4', await fetchFile(file));
 
             const z = zoomSlider.value;
             const p = panSlider.value;
             const start = document.getElementById('start').value;
             const dur = document.getElementById('dur').value;
+            const [w, h] = resSelect.value.split('x');
 
-            // AMBIL RESOLUSI DARI DROPDOWN
-            const [w, h] = resSelect.value.split('x'); // "720x1280" -> ["720","1280"]
-
-            // FILTER DINAMIS: Crop dulu, baru scale ke resolusi pilihan
+            // FILTER KAMU: Tetep sama, cuma scale-nya dinamis
             const vf = `crop=ih*9/16/${z}:ih/${z}:(iw-ih*9/16/${z})*${p}/100:0,scale=${w}:${h}`;
 
-            statusEl.innerText = `Render ${h}p jalan...`;
-            await ffmpeg.run(
+            statusEl.innerText = `Render ${h}p jalan... Sabar ya`;
+            await ffmpeg.exec([
                 '-i', 'input.mp4',
                 '-ss', start,
                 '-t', dur,
                 '-vf', vf,
-                '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '28',
+                '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '30', // crf 30 biar lebih enteng
                 '-c:a', 'aac', '-b:a', '96k',
                 'output.mp4'
-            );
+            ]);
 
             statusEl.innerText = 'Bikin link download...';
-            const data = ffmpeg.FS('readFile', 'output.mp4');
+            const data = await ffmpeg.readFile('output.mp4');
             const a = document.createElement('a');
             a.href = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
             a.download = `alan_${h}p_${Date.now()}.mp4`;
             a.click();
 
-            statusEl.innerText = `✅ SELESAI ${h}p! Cek download.`;
+            statusEl.innerText = `✅ SELESAI ${h}p! Cek folder Download.`;
         } catch (e) {
             console.error(e);
-            statusEl.innerText = "❌ GAGAL: RAM HP penuh. Coba 480p / durasi pendekin.";
+            statusEl.innerText = "❌ GAGAL: RAM HP penuh. Coba 480p / durasi <10 detik.";
         } finally {
             renderBtn.disabled = false;
-            setTimeout(() => { pBar.style.display = 'none'; fill.style.width = '0%'; }, 2000);
+            setTimeout(() => { pBar.style.display = 'none'; fill.style.width = '0%'; }, 3000);
         }
     };
+
+    // Cek coi-serviceworker udah aktif apa belum
+    if (window.crossOriginIsolated) {
+        statusEl.innerText = 'Siap, Lan! Core aman ✅';
+    } else {
+        statusEl.innerText = 'Error: coi-serviceworker belum jalan. Coba refresh.';
+    }
 </script>
 
 </body>
