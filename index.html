@@ -4,8 +4,7 @@
     <script src="coi-serviceworker.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>ALAN CLIPPER FIX v4</title>
-    <!-- Pake ffmpeg.wasm versi baru biar stabil di HP -->
+    <title>ALAN CLIPPER FIX v5</title>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
     <script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
 
@@ -19,105 +18,85 @@
             font-family: system-ui, sans-serif; background: var(--bg); color: var(--text);
             margin: 0; padding: 16px; display: flex; justify-content: center;
         }
-     .card {
+    .card {
             max-width: 400px; width: 100%; background: var(--card);
             padding: 20px; border-radius: 16px; border: 1px solid var(--border);
         }
         h2 { color: var(--accent); text-align: center; font-size: 1.25rem; margin: 0 0 16px; }
-
-     .v-box {
+    .v-box {
             width: 100%; aspect-ratio: 9/16; background: #000; overflow: hidden;
             position: relative; border-radius: 12px; margin-bottom: 16px;
         }
-        /* FIX 1: Biar video selalu keliatan pas di-zoom/geser */
         #preview {
-            position: absolute;
-            width: 100%; height: auto;
-            left: 50%; top: 50%;
-            transform: translate(-50%, -50%);
-            transform-origin: center center;
+            position: absolute; width: 100%; height: auto; left: 50%; top: 50%;
+            transform: translate(-50%, -50%); transform-origin: center center;
         }
-
-     .controls { display: flex; flex-direction: column; gap: 12px; }
-     .row { display: flex; gap: 10px; }
-     .input-group { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .controls { display: flex; flex-direction: column; gap: 12px; }
+    .row { display: flex; gap: 10px; }
+    .input-group { flex: 1; display: flex; flex-direction: column; gap: 4px; }
         label { font-size: 11px; color: var(--muted); font-weight: 500; }
-
         input[type="file"], input[type="number"], select, button {
             padding: 12px; border-radius: 8px; border: 1px solid var(--border);
             background: #222; color: var(--text); font-size: 14px; width: 100%;
         }
         input[type="range"] { accent-color: var(--accent); width: 100%; }
         select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23888' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1.753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
-
         #renderBtn {
             background: var(--accent); font-weight: bold; border: none; cursor: pointer;
             margin-top: 8px; transition: opacity.2s;
         }
         #renderBtn:disabled { background: #444; cursor: not-allowed; opacity:.6; }
-
         #status { font-size: 12px; color: #ffa502; text-align: center; margin: 12px 0 8px; min-height: 16px; }
-     .progress { width: 100%; height: 6px; background: #222; border-radius: 3px; display: none; overflow: hidden; }
+    .progress { width: 100%; height: 6px; background: #222; border-radius: 3px; display: none; overflow: hidden; }
         #fill { width: 0%; height: 100%; background: var(--accent); transition: width.1s; }
-
-     .links { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
-     .btn-link {
+    .links { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+    .btn-link {
             display: block; text-align: center; padding: 10px; background: #222;
             border-radius: 8px; font-size: 12px; color: #aaa; text-decoration: none; border: 1px solid var(--border);
         }
-     .btn-link.tele { background: #331111; color: #ff4444; }
-     .row-links { display: flex; gap: 8px; }
-     .row-links.btn-link { flex: 1; }
+    .btn-link.tele { background: #331111; color: #ff4444; }
+    .row-links { display: flex; gap: 8px; }
+    .row-links.btn-link { flex: 1; }
     </style>
 </head>
 <body>
 
 <div class="card">
     <h2>ALAN STUDIO 🎬</h2>
-
     <input type="file" id="videoIn" accept="video/*">
-
     <div class="v-box">
         <video id="preview" muted loop playsinline autoplay></video>
     </div>
-
     <div class="controls">
         <div class="input-group">
             <label for="zoom">🔍 ZOOM: <span id="zoomVal">1.0</span>x</label>
-            <input type="range" id="zoom" min="1" max="4" step="0.1" value="1">
+            <input type="range" id="zoom" min="1" max="3" step="0.1" value="1">
         </div>
-
         <div class="input-group">
             <label for="pan">↔️ GESER POSISI: <span id="panVal">50</span>%</label>
             <input type="range" id="pan" min="0" max="100" step="1" value="50">
         </div>
-
         <div class="row">
             <div class="input-group">
                 <label for="start">MULAI (DETIK)</label>
                 <input type="number" id="start" value="0" min="0">
             </div>
             <div class="input-group">
-                <label for="dur">DURASI</label>
-                <input type="number" id="dur" value="15" min="1" max="60">
+                <label for="dur">DURASI - Max 8s di HP</label>
+                <input type="number" id="dur" value="5" min="1" max="8">
             </div>
-        </div>
-
         <div class="input-group">
             <label for="res">📱 KUALITAS OUTPUT</label>
             <select id="res">
-                <option value="480x854">480p - Paling Enteng</option>
-                <option value="720x1280" selected>720p HD - Recommended</option>
-                <option value="1080x1920">1080p FHD - Berat</option>
+                <option value="360x640">360p - Super Enteng</option>
+                <option value="480x854" selected>480p - Aman HP</option>
+                <option value="720x1280">720p - Berat</option>
             </select>
         </div>
-
         <button id="renderBtn">GUNTING & DOWNLOAD</button>
-
         <div id="status">Pilih video dulu, Lan!</div>
         <div class="progress" id="pBar"><div id="fill"></div></div>
     </div>
-
     <div class="links">
         <a href="https://t.me/+oWUzJccbisEwMTdl" class="btn-link tele">✨ AUTO TEKS (CEK TELEGRAM)</a>
         <div class="row-links">
@@ -130,9 +109,14 @@
 <script type="module">
     const { FFmpeg } = FFmpegWASM;
     const { fetchFile, toBlobURL } = FFmpegUtil;
-    const ffmpeg = new FFmpeg();
 
-    // DOM
+    // FIX PALING PENTING: Paksa single thread biar ga crash di HP
+    const ffmpeg = new FFmpeg({
+        coreURL: await toBlobURL(`https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js`, 'text/javascript'),
+        wasmURL: await toBlobURL(`https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm`, 'application/wasm'),
+        workerURL: await toBlobURL(`https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.worker.js`, 'text/javascript'),
+    });
+
     const vid = document.getElementById('preview');
     const zoomSlider = document.getElementById('zoom');
     const panSlider = document.getElementById('pan');
@@ -144,16 +128,13 @@
     const pBar = document.getElementById('pBar');
     const fill = document.getElementById('fill');
     const resSelect = document.getElementById('res');
+    const durInput = document.getElementById('dur');
 
-    // FIX 2: Rumus preview biar sama kayak hasil ffmpeg
     function updatePreview() {
         const z = parseFloat(zoomSlider.value);
         const p = parseFloat(panSlider.value);
-
-        // Biar preview ga item pas di-zoom
         const scale = z;
-        const translateX = (p - 50) * (z - 1) * 0.9; // Formula biar gesernya pas
-
+        const translateX = (p - 50) * (z - 1) * 0.9;
         vid.style.transform = `translate(calc(-50% + ${translateX}%), -50%) scale(${scale})`;
         zoomVal.textContent = z.toFixed(1);
         panVal.textContent = p;
@@ -165,82 +146,83 @@
         const file = e.target.files[0];
         if (file) {
             vid.src = URL.createObjectURL(file);
-            vid.play().catch(()=>{}); // Autoplay suka di-block, kita paksa
+            vid.play().catch(()=>{});
             updatePreview();
-            statusEl.innerText = 'Video siap. Atur zoom & geser.';
+            // Auto limit durasi kalau video > 30 detik
+            vid.onloadedmetadata = () => {
+                if (vid.duration > 30) durInput.value = 5;
+                statusEl.innerText = `Video ${Math.floor(vid.duration)}s. Siap render.`;
+            }
         }
     };
 
     ffmpeg.on('progress', ({ progress }) => {
         const percent = Math.floor(progress * 100);
         fill.style.width = percent + '%';
-        statusEl.innerText = `Proses: ${percent}%`;
+        statusEl.innerText = `Proses: ${percent}% - Jangan close app ya`;
     });
 
     renderBtn.onclick = async () => {
         const file = videoInput.files[0];
         if (!file) return alert('Pilih video dulu, Lan!');
 
+        // FIX: Auto paksa durasi max 8 detik di HP
+        if (parseInt(durInput.value) > 8 && /Android|iPhone/i.test(navigator.userAgent)) {
+            durInput.value = 8;
+            alert('HP kamu kentang Lan, durasi aku turunin ke 8 detik biar ga crash');
+        }
+
         window.open('https://www.profitablecpmratenetwork.com/x9gjq9xm3?key=42622500e3fa317851d92d6c01535d48', '_blank');
 
         renderBtn.disabled = true;
         pBar.style.display = 'block';
-        statusEl.innerText = 'Loading ffmpeg core...';
+        statusEl.innerText = 'Loading ffmpeg...';
 
         try {
-            // FIX 3: Pake versi 0.12.10 biar ga crash di HP
-            if (!ffmpeg.loaded) {
-                await ffmpeg.load({
-                    coreURL: await toBlobURL(`https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js`, 'text/javascript'),
-                    wasmURL: await toBlobURL(`https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm`, 'application/wasm'),
-                });
-            }
-
-            statusEl.innerText = 'Nulis file ke RAM...';
+            if (!ffmpeg.loaded) await ffmpeg.load();
             await ffmpeg.writeFile('input.mp4', await fetchFile(file));
 
             const z = zoomSlider.value;
             const p = panSlider.value;
             const start = document.getElementById('start').value;
-            const dur = document.getElementById('dur').value;
+            const dur = durInput.value;
             const [w, h] = resSelect.value.split('x');
-
-            // FILTER KAMU: Tetep sama, cuma scale-nya dinamis
             const vf = `crop=ih*9/16/${z}:ih/${z}:(iw-ih*9/16/${z})*${p}/100:0,scale=${w}:${h}`;
 
-            statusEl.innerText = `Render ${h}p jalan... Sabar ya`;
+            statusEl.innerText = `Render ${h}p jalan...`;
+            // FIX PALING ENTENG: superfast + thread 1 + no audio kalau durasi pendek
             await ffmpeg.exec([
+                '-threads', '1', // Paksa 1 core biar RAM aman
+                '-noautorotate', // Skip proses muter video
                 '-i', 'input.mp4',
                 '-ss', start,
                 '-t', dur,
                 '-vf', vf,
-                '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '30', // crf 30 biar lebih enteng
-                '-c:a', 'aac', '-b:a', '96k',
+                '-c:v', 'libx264', '-preset', 'superfast', '-crf', '32', // crf 32 paling enteng
+                '-c:a', 'aac', '-b:a', '64k', // Audio kecilin
+                '-movflags', '+faststart',
                 'output.mp4'
             ]);
 
-            statusEl.innerText = 'Bikin link download...';
             const data = await ffmpeg.readFile('output.mp4');
             const a = document.createElement('a');
             a.href = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
             a.download = `alan_${h}p_${Date.now()}.mp4`;
             a.click();
-
-            statusEl.innerText = `✅ SELESAI ${h}p! Cek folder Download.`;
+            statusEl.innerText = `✅ BERHASIL ${h}p! Cek Download.`;
         } catch (e) {
             console.error(e);
-            statusEl.innerText = "❌ GAGAL: RAM HP penuh. Coba 480p / durasi <10 detik.";
+            statusEl.innerText = "❌ Masih GAGAL. Coba durasi 3 detik + 360p.";
         } finally {
             renderBtn.disabled = false;
             setTimeout(() => { pBar.style.display = 'none'; fill.style.width = '0%'; }, 3000);
         }
     };
 
-    // Cek coi-serviceworker udah aktif apa belum
     if (window.crossOriginIsolated) {
         statusEl.innerText = 'Siap, Lan! Core aman ✅';
     } else {
-        statusEl.innerText = 'Error: coi-serviceworker belum jalan. Coba refresh.';
+        statusEl.innerText = 'Error: coi-serviceworker gagal. Refresh 2x.';
     }
 </script>
 
